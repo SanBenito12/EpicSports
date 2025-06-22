@@ -10,9 +10,9 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase inicializado correctamente');
+    debugPrint('✅ Firebase inicializado correctamente');
   } catch (e) {
-    print('❌ Error al inicializar Firebase: $e');
+    debugPrint('❌ Error al inicializar Firebase: $e');
   }
 
   runApp(const MyApp());
