@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "516533754686",
+    "project_id": "epicsports-2025",
+    "storage_bucket": "epicsports-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516533754686:android:269f6544c55c414e962a6f",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwe1FuAfa4wdM7-arQDNsvwEvo_vODGy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
