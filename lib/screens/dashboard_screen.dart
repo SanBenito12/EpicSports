@@ -102,6 +102,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _isLoadingGames = false;
         });
 
+        // Debug: Imprimir información de los marcadores
+        debugPrint('📊 === INFORMACIÓN DE JUEGOS CARGADOS ===');
+        for (var game in games) {
+          debugPrint('🏟️ ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}');
+          debugPrint('   Estado: ${game.status}');
+          debugPrint('   En vivo: ${game.isLive}');
+          debugPrint('   Completado: ${game.isCompleted}');
+          debugPrint('   Marcador: ${game.score?.toString() ?? 'Sin marcador'}');
+          if (game.inning != null) {
+            debugPrint('   Inning: ${game.inning} (${game.inningHalf})');
+          }
+          debugPrint('   Programado: ${game.scheduled}');
+          debugPrint('   ---');
+        }
+
         // Verificar notificaciones para juegos que han empezado
         await _notificationService.checkAndSendGameStartNotifications(games);
       }
@@ -171,6 +186,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _testApiConnection() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Probando conexión API...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final isConnected = await _mlbApiService.testApiConnection();
+      Navigator.pop(context); // Cerrar dialog de loading
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            isConnected ? '✅ API Conectada' : '❌ Error de API',
+            style: GoogleFonts.poppins(),
+          ),
+          content: Text(
+            isConnected 
+              ? 'La conexión con Sportradar API está funcionando correctamente.'
+              : 'No se pudo conectar con la API. Verifica tu API Key y conexión a internet.',
+            style: GoogleFonts.poppins(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+            if (isConnected)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _loadTodaysGames();
+                },
+                child: const Text('Recargar Juegos'),
+              ),
+          ],
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Cerrar dialog de loading
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error en test: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -203,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Partidos de Hoy',
+                            'Partidos MLB de Hoy',
                             style: GoogleFonts.poppins(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -400,13 +475,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      game.formattedTime,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 14,
+                    if (!game.isLive && !game.isCompleted)
+                      Text(
+                        game.formattedTime,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
                     const Spacer(),
                     if (game.isLive)
                       Container(
@@ -441,6 +517,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
+                    if (game.isCompleted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[700],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'FINAL',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -466,13 +561,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (game.score != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '${game.score!.awayScore}',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${game.score!.awayScore}',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 24,
+                                ),
                               ),
                             ),
                           ],
@@ -480,44 +585,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
 
-                    // VS o información del inning
+                    // VS o información del inning/marcador
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child:
-                          game.isLive && game.inning != null
-                              ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    game.inningHalf == 'top' ? '▲' : '▼',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    game.inning!,
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              )
-                              : Text(
-                                'VS',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (game.isLive && game.inning != null) ...[
+                            Text(
+                              game.inningHalf == 'top' ? '▲' : '▼',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
+                            Text(
+                              '${game.inning}°',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ] else if (game.score != null) ...[
+                            Icon(
+                              Icons.sports_baseball,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ] else ...[
+                            Text(
+                              'VS',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
 
                     // Equipo local (Home)
@@ -538,13 +650,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (game.score != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '${game.score!.homeScore}',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${game.score!.homeScore}',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 24,
+                                ),
                               ),
                             ),
                           ],
@@ -553,6 +675,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
+
+                // Información adicional del marcador
+                if (game.score != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Marcador Final: ',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          '${game.awayTeam.abbreviation} ${game.score!.awayScore} - ${game.score!.homeScore} ${game.homeTeam.abbreviation}',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 20),
 
                 // Notificación y detalles del juego
@@ -788,6 +943,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.black87),
             onPressed: _loadTodaysGames,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report, color: Colors.orange),
+            onPressed: _testApiConnection,
+            tooltip: 'Probar API',
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.menu, color: Colors.black87),

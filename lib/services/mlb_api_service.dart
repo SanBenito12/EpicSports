@@ -42,24 +42,48 @@ class MLBApiService {
         final data = json.decode(response.body);
         final games = <MLBGame>[];
 
+        debugPrint('📊 Estructura de respuesta API: ${data.keys.toList()}');
+
         if (data['games'] != null) {
           for (var gameData in data['games']) {
             try {
-              final game = MLBGame.fromJson(gameData);
+              debugPrint('🏟️ Parseando juego: ${gameData['id']}');
+              
+              // Para juegos en vivo o completados, intentar obtener información detallada
+              final status = gameData['status'];
+              MLBGame game;
+              
+              if (status == 'inprogress' || status == 'closed') {
+                // Intentar obtener detalles del juego para marcadores en vivo
+                final detailedGame = await getGameDetails(gameData['id']);
+                game = detailedGame ?? MLBGame.fromJson(gameData);
+              } else {
+                game = MLBGame.fromJson(gameData);
+              }
+              
               games.add(game);
+              debugPrint('✅ Juego agregado: ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}');
+              
+              if (game.score != null) {
+                debugPrint('📊 Marcador: ${game.score!.awayScore} - ${game.score!.homeScore}');
+              }
+              
             } catch (e) {
               debugPrint('❌ Error parseando juego: $e');
+              debugPrint('🔍 Datos del juego problemático: $gameData');
             }
           }
         }
 
-        debugPrint('✅ ${games.length} juegos obtenidos para hoy');
+        debugPrint('✅ Total de ${games.length} juegos obtenidos para hoy');
         return games;
       } else if (response.statusCode == 401) {
         throw 'API Key inválida. Verifica tu clave de Sportradar.';
       } else if (response.statusCode == 429) {
         throw 'Límite de llamadas excedido. Intenta de nuevo en un momento.';
       } else {
+        debugPrint('❌ Error HTTP: ${response.statusCode}');
+        debugPrint('❌ Respuesta: ${response.body}');
         throw 'Error al obtener datos: ${response.statusCode}';
       }
     } catch (e) {
@@ -80,11 +104,22 @@ class MLBApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return MLBGame.fromJson(data['game'] ?? data);
+        
+        debugPrint('📊 Estructura de summary: ${data.keys.toList()}');
+        
+        // La API de summary puede tener diferentes estructuras
+        Map<String, dynamic> gameData;
+        
+        if (data['game'] != null) {
+          gameData = data['game'];
+        } else {
+          gameData = data;
+        }
+        
+        return MLBGame.fromJson(gameData);
       } else {
-        debugPrint(
-          '❌ Error obteniendo detalles del juego: ${response.statusCode}',
-        );
+        debugPrint('❌ Error obteniendo detalles del juego: ${response.statusCode}');
+        debugPrint('❌ Respuesta: ${response.body}');
         return null;
       }
     } catch (e) {
@@ -101,6 +136,24 @@ class MLBApiService {
       debugPrint('❌ Error en getLiveGames: $e');
       return [];
     }
+  }
+
+  // Método específico para obtener solo marcadores actualizados
+  Future<List<MLBGame>> getUpdatedScores(List<String> gameIds) async {
+    final updatedGames = <MLBGame>[];
+    
+    for (String gameId in gameIds) {
+      try {
+        final game = await getGameDetails(gameId);
+        if (game != null) {
+          updatedGames.add(game);
+        }
+      } catch (e) {
+        debugPrint('❌ Error actualizando marcador para $gameId: $e');
+      }
+    }
+    
+    return updatedGames;
   }
 
   // Método para obtener juegos con polling (cada 30 segundos para juegos en vivo)
@@ -123,5 +176,22 @@ class MLBApiService {
   // Validar que la API Key esté configurada
   bool isApiKeyConfigured() {
     return ApiConfig.isConfigured;
+  }
+
+  // Método para hacer una llamada de prueba a la API
+  Future<bool> testApiConnection() async {
+    try {
+      await _waitForRateLimit();
+      
+      final url = '$_baseUrl/league/hierarchy.json?api_key=$_apiKey';
+      final response = await http.get(Uri.parse(url));
+      
+      debugPrint('🔗 Test API Connection: ${response.statusCode}');
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('❌ Error en test de conexión: $e');
+      return false;
+    }
   }
 }

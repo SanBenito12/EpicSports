@@ -8,7 +8,7 @@ class ApiConfig {
   // 4. Copia tu API Key y reemplaza la línea de abajo
 
   static const String sportradarApiKey =
-      'GmvkNEi7ubWVkKWMGTtSSI8eoa4vteb6anUpgH7B';
+      'k9ln4pfG2RwsgCCIXG1620hlMwGspvrCcHCqgNdO';
 
   // URLs base para diferentes APIs
   static const String mlbApiBaseUrl =

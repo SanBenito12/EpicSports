@@ -12,6 +12,7 @@ class MLBGame {
   final String? inningHalf;
   final Venue venue;
   final bool isLive;
+  final String? statusDetail;
 
   MLBGame({
     required this.id,
@@ -24,26 +25,73 @@ class MLBGame {
     this.inningHalf,
     required this.venue,
     required this.isLive,
+    this.statusDetail,
   });
 
   factory MLBGame.fromJson(Map<String, dynamic> json) {
+    // Debug: Imprimir la estructura del JSON para entender mejor los datos
+    print('🔍 Estructura del juego JSON: ${json.keys.toList()}');
+    
+    GameScore? gameScore;
+    
+    // Intentar obtener el marcador de diferentes posibles estructuras
+    if (json['home'] != null && json['away'] != null) {
+      final home = json['home'] as Map<String, dynamic>;
+      final away = json['away'] as Map<String, dynamic>;
+      
+      // Buscar marcadores en diferentes campos posibles
+      int? homeScore = home['runs'] ?? home['points'] ?? home['score'];
+      int? awayScore = away['runs'] ?? away['points'] ?? away['score'];
+      
+      if (homeScore != null && awayScore != null) {
+        gameScore = GameScore(homeScore: homeScore, awayScore: awayScore);
+      }
+    }
+    
+    // Si no encontramos marcadores en home/away, buscar en summary o game
+    if (gameScore == null && json['summary'] != null) {
+      final summary = json['summary'] as Map<String, dynamic>;
+      if (summary['home'] != null && summary['away'] != null) {
+        final homeRuns = summary['home']['runs'];
+        final awayRuns = summary['away']['runs'];
+        if (homeRuns != null && awayRuns != null) {
+          gameScore = GameScore(homeScore: homeRuns, awayScore: awayRuns);
+        }
+      }
+    }
+
+    // Determinar si el juego está en vivo
+    final status = json['status'] ?? '';
+    final isLive = status == 'inprogress' || status == 'live';
+
+    // Obtener información del inning
+    String? currentInning;
+    String? inningHalf;
+    
+    if (json['inning'] != null) {
+      currentInning = json['inning'].toString();
+    } else if (json['game_inning'] != null) {
+      currentInning = json['game_inning'].toString();
+    }
+    
+    if (json['inning_half'] != null) {
+      inningHalf = json['inning_half'];
+    } else if (json['top_inning'] != null) {
+      inningHalf = json['top_inning'] == true ? 'top' : 'bottom';
+    }
+
     return MLBGame(
       id: json['id'] ?? '',
-      status: json['status'] ?? '',
+      status: status,
       scheduled: json['scheduled'] ?? '',
       homeTeam: Team.fromJson(json['home'] ?? {}),
       awayTeam: Team.fromJson(json['away'] ?? {}),
-      score:
-          json['home_points'] != null && json['away_points'] != null
-              ? GameScore(
-                homeScore: json['home_points'],
-                awayScore: json['away_points'],
-              )
-              : null,
-      inning: json['inning']?.toString(),
-      inningHalf: json['inning_half'],
+      score: gameScore,
+      inning: currentInning,
+      inningHalf: inningHalf,
       venue: Venue.fromJson(json['venue'] ?? {}),
-      isLive: json['status'] == 'inprogress',
+      isLive: isLive,
+      statusDetail: json['status_detail'],
     );
   }
 
@@ -58,13 +106,8 @@ class MLBGame {
 
   String get formattedTime {
     try {
-      final date = DateTime.parse(scheduled);
-      final hour =
-          date.hour > 12
-              ? date.hour - 12
-              : date.hour == 0
-              ? 12
-              : date.hour;
+      final date = DateTime.parse(scheduled).toLocal();
+      final hour = date.hour > 12 ? date.hour - 12 : date.hour == 0 ? 12 : date.hour;
       final period = date.hour >= 12 ? 'PM' : 'AM';
       final minute = date.minute.toString().padLeft(2, '0');
       return "$hour:$minute $period";
@@ -74,7 +117,13 @@ class MLBGame {
   }
 
   String get gameTitle {
-    return "MLB ${_getStatusText()}";
+    if (isLive) {
+      return "MLB - EN VIVO";
+    } else if (isCompleted) {
+      return "MLB - FINAL";
+    } else {
+      return "MLB - PROGRAMADO";
+    }
   }
 
   String get gameStatusText {
@@ -86,7 +135,7 @@ class MLBGame {
   }
 
   bool get isCompleted {
-    return status == 'closed';
+    return status == 'closed' || status == 'complete';
   }
 
   DateTime? get scheduledTime {
@@ -97,38 +146,46 @@ class MLBGame {
     }
   }
 
+  String get displayScore {
+    if (score != null) {
+      return "${score!.awayScore} - ${score!.homeScore}";
+    } else if (isCompleted) {
+      return "Final";
+    } else if (isLive) {
+      return "En Vivo";
+    } else {
+      return formattedTime;
+    }
+  }
+
   String _getStatusText() {
     switch (status) {
       case 'scheduled':
         return 'Programado';
       case 'inprogress':
+      case 'live':
         return 'En Vivo';
       case 'closed':
-        return 'Finalizado';
+      case 'complete':
+        return 'Final';
       case 'postponed':
         return 'Pospuesto';
       case 'cancelled':
         return 'Cancelado';
+      case 'delayed':
+        return 'Retrasado';
+      case 'suspended':
+        return 'Suspendido';
       default:
-        return 'Programado';
+        return statusDetail ?? 'Programado';
     }
   }
 
   String _getMonthName(int month) {
     const months = [
       '',
-      'ENE',
-      'FEB',
-      'MAR',
-      'ABR',
-      'MAY',
-      'JUN',
-      'JUL',
-      'AGO',
-      'SEP',
-      'OCT',
-      'NOV',
-      'DIC',
+      'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
+      'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
     ];
     return months[month];
   }
@@ -164,11 +221,15 @@ class Team {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       market: json['market'] ?? '',
-      abbreviation: json['abbr'] ?? '',
+      abbreviation: json['abbr'] ?? json['abbreviation'] ?? '',
     );
   }
 
-  String get fullName => "$market $name";
+  String get fullName => market.isNotEmpty && name.isNotEmpty 
+    ? "$market $name" 
+    : name.isNotEmpty 
+      ? name 
+      : abbreviation;
 }
 
 class GameScore {
@@ -176,6 +237,9 @@ class GameScore {
   final int awayScore;
 
   GameScore({required this.homeScore, required this.awayScore});
+  
+  @override
+  String toString() => "$awayScore - $homeScore";
 }
 
 class Venue {
@@ -200,5 +264,15 @@ class Venue {
     );
   }
 
-  String get location => "$city, $state";
+  String get location {
+    if (city.isNotEmpty && state.isNotEmpty) {
+      return "$city, $state";
+    } else if (city.isNotEmpty) {
+      return city;
+    } else if (name.isNotEmpty) {
+      return name;
+    } else {
+      return "Ubicación TBD";
+    }
+  }
 }
