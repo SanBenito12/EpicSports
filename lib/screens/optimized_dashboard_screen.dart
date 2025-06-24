@@ -7,7 +7,8 @@ import '../models/mlb_game.dart';
 import '../services/auth_service.dart';
 import '../services/sportradar_service.dart';
 import '../services/game_notification_service.dart';
-import '../services/push_notification_service.dart'; // 🔔 NUEVO
+import '../services/push_notification_service.dart';
+import '../services/game_monitor_service.dart'; // 🔍 NUEVO
 import '../models/user_model.dart';
 import '../config/api_config.dart';
 import '../widgets/game_widgets.dart';
@@ -29,6 +30,7 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
   final AuthService _authService = AuthService();
   final SportradarService _sportradarService = SportradarService();
   final GameNotificationService _notificationService = GameNotificationService();
+  final GameMonitorService _gameMonitor = GameMonitorService.instance; // 🔍 NUEVO
 
   // Data State
   UserModel? _currentUser;
@@ -56,8 +58,9 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _notificationTimer?.cancel(); // 🔔 NUEVO
+    _notificationTimer?.cancel();
     _notificationSubscription?.cancel();
+    _gameMonitor.stopMonitoring(); // 🔍 NUEVO
     super.dispose();
   }
 
@@ -65,12 +68,23 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
   Future<void> _initializeApp() async {
     await _loadUserData();
     await _checkApiConfiguration();
-    await _initializeNotifications(); // 🔔 NUEVO
+    await _initializeNotifications();
+    await _startGameMonitoring(); // 🔍 NUEVO
     await _loadInitialData();
     _setupAutoRefresh();
-    _setupNotificationChecks(); // 🔔 NUEVO
+    _setupNotificationChecks();
     _listenToNotificationChanges();
-    _showWelcomeNotification(); // 🔔 NUEVO
+    _showWelcomeNotification();
+  }
+
+  /// 🔍 INICIALIZAR MONITOR DE PARTIDOS
+  Future<void> _startGameMonitoring() async {
+    try {
+      await _gameMonitor.startMonitoring();
+      debugPrint('✅ Monitor de partidos iniciado');
+    } catch (e) {
+      debugPrint('❌ Error iniciando monitor de partidos: $e');
+    }
   }
 
   /// 🔔 INICIALIZAR NOTIFICACIONES
@@ -427,6 +441,26 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
                   ],
                 ),
               ),
+              const PopupMenuItem(
+                value: 'force_check',
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('🔍 Verificar Ahora'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'monitor_stats',
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('📊 Stats Monitor'),
+                  ],
+                ),
+              ),
               const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'test_connection',
@@ -736,6 +770,12 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
       case 'simulate_game':
         _simulateGameStart();
         break;
+      case 'force_check':
+        _forceMonitorCheck(); // 🔍 NUEVO
+        break;
+      case 'monitor_stats':
+        _showMonitorStats(); // 🔍 NUEVO
+        break;
       case 'test_connection':
         _testApiConnection();
         break;
@@ -760,13 +800,56 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
 
   /// 🔔 SIMULAR INICIO DE PARTIDO
   Future<void> _simulateGameStart() async {
-    await PushNotificationService.simulateGameStart();
+    await _gameMonitor.simulateGameStarting(); // 🔍 ACTUALIZADO
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('🎮 Simulación de inicio de partido enviada'),
         backgroundColor: Colors.blue,
         duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 🔍 FORZAR VERIFICACIÓN DEL MONITOR
+  Future<void> _forceMonitorCheck() async {
+    await _gameMonitor.forceCheck();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔍 Verificación forzada ejecutada'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 🔍 MOSTRAR ESTADÍSTICAS DEL MONITOR
+  void _showMonitorStats() {
+    final stats = _gameMonitor.getMonitorStats();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('📊 Estadísticas del Monitor', style: GoogleFonts.poppins()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('🔍 Monitor activo: ${stats['is_monitoring'] ? 'SÍ' : 'NO'}'),
+            Text('🎮 Partidos monitoreados: ${stats['games_being_monitored']}'),
+            Text('🔴 Partidos en vivo: ${stats['live_games_count']}'),
+            Text('📅 Partidos programados: ${stats['scheduled_games_count']}'),
+            Text('🔔 Notificaciones enviadas: ${stats['games_already_notified']}'),
+            Text('⏰ Recordatorios enviados: ${stats['reminders_sent']}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
       ),
     );
   }
