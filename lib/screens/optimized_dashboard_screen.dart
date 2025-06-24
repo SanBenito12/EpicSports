@@ -7,12 +7,10 @@ import '../models/mlb_game.dart';
 import '../services/auth_service.dart';
 import '../services/sportradar_service.dart';
 import '../services/game_notification_service.dart';
+import '../services/push_notification_service.dart'; // 🔔 NUEVO
 import '../models/user_model.dart';
 import '../config/api_config.dart';
 import '../widgets/game_widgets.dart';
-
-// Asegurar que este import esté presente
-export '../widgets/game_widgets.dart';
 import 'login_screen.dart';
 
 class OptimizedDashboardScreen extends StatefulWidget {
@@ -46,6 +44,7 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
 
   // Controllers
   Timer? _refreshTimer;
+  Timer? _notificationTimer; // 🔔 NUEVO
   StreamSubscription<List<String>>? _notificationSubscription;
 
   @override
@@ -57,6 +56,7 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _notificationTimer?.cancel(); // 🔔 NUEVO
     _notificationSubscription?.cancel();
     super.dispose();
   }
@@ -65,9 +65,39 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
   Future<void> _initializeApp() async {
     await _loadUserData();
     await _checkApiConfiguration();
+    await _initializeNotifications(); // 🔔 NUEVO
     await _loadInitialData();
     _setupAutoRefresh();
+    _setupNotificationChecks(); // 🔔 NUEVO
     _listenToNotificationChanges();
+    _showWelcomeNotification(); // 🔔 NUEVO
+  }
+
+  /// 🔔 INICIALIZAR NOTIFICACIONES
+  Future<void> _initializeNotifications() async {
+    try {
+      await PushNotificationService.initialize();
+      debugPrint('✅ Notificaciones inicializadas en dashboard');
+    } catch (e) {
+      debugPrint('❌ Error inicializando notificaciones en dashboard: $e');
+    }
+  }
+
+  /// 🔔 CONFIGURAR VERIFICACIONES PERIÓDICAS DE NOTIFICACIONES
+  void _setupNotificationChecks() {
+    // Verificar cada 2 minutos si hay partidos que van a empezar
+    _notificationTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (_allGames.isNotEmpty) {
+        PushNotificationService.checkUpcomingGames(_allGames);
+      }
+    });
+  }
+
+  /// 🔔 MOSTRAR NOTIFICACIÓN DE BIENVENIDA (PRUEBA)
+  Future<void> _showWelcomeNotification() async {
+    // Esperar un poco para que la UI se cargue
+    await Future.delayed(const Duration(seconds: 2));
+    await PushNotificationService.showTestNotification();
   }
 
   /// Cargar datos del usuario
@@ -118,7 +148,6 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
         _errorMessage = null;
       });
 
-      // Usar el nuevo servicio optimizado
       final games = await _sportradarService.getTodaysGames();
 
       if (mounted) {
@@ -166,7 +195,6 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
 
   /// Configurar auto-refresh inteligente
   void _setupAutoRefresh() {
-    // Intervalo dinámico: cada 2 minutos si hay juegos en vivo, cada 10 minutos si no
     final interval = _liveGames.isNotEmpty 
         ? const Duration(minutes: 2)
         : const Duration(minutes: 10);
@@ -217,7 +245,6 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
 
   /// Manejo de tap en juego
   void _handleGameTap(MLBGame game) {
-    // Aquí podrías navegar a detalle del juego
     debugPrint('🎯 Tap en juego: ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}');
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -375,11 +402,32 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
             tooltip: 'Actualizar',
           ),
 
-          // Menu
+          // Menu with notifications options 🔔
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.black87),
             onSelected: _handleMenuAction,
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'test_notification',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_active, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('🧪 Prueba Notificación'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'simulate_game',
+                child: Row(
+                  children: [
+                    Icon(Icons.sports_baseball, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('🎮 Simular Partido'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'test_connection',
                 child: Row(
@@ -679,9 +727,15 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
     );
   }
 
-  /// Manejo de acciones del menú
+  /// Manejo de acciones del menú 🔔 ACTUALIZADO
   void _handleMenuAction(String action) {
     switch (action) {
+      case 'test_notification':
+        _showTestNotification();
+        break;
+      case 'simulate_game':
+        _simulateGameStart();
+        break;
       case 'test_connection':
         _testApiConnection();
         break;
@@ -689,6 +743,32 @@ class _OptimizedDashboardScreenState extends State<OptimizedDashboardScreen> {
         _handleLogout();
         break;
     }
+  }
+
+  /// 🔔 MOSTRAR NOTIFICACIÓN DE PRUEBA
+  Future<void> _showTestNotification() async {
+    await PushNotificationService.showTestNotification();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🧪 Notificación de prueba enviada'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 🔔 SIMULAR INICIO DE PARTIDO
+  Future<void> _simulateGameStart() async {
+    await PushNotificationService.simulateGameStart();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🎮 Simulación de inicio de partido enviada'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   /// Test de conexión API
