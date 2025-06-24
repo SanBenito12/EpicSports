@@ -1,6 +1,5 @@
 // lib/models/mlb_game.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 class MLBGame {
   final String id;
@@ -30,35 +29,25 @@ class MLBGame {
   });
 
   factory MLBGame.fromJson(Map<String, dynamic> json) {
-    debugPrint('🔍 Parseando juego: ${json['id']} - Status: ${json['status']}');
-    
     GameScore? gameScore;
     
-    // Buscar marcadores de forma simple
+    // Buscar marcadores de diferentes formas
     if (json['home'] != null && json['away'] != null) {
       final home = json['home'] as Map<String, dynamic>;
       final away = json['away'] as Map<String, dynamic>;
       
-      // Buscar runs (carreras) que es lo más común en MLB
+      // Intentar obtener runs directamente
       final homeRuns = home['runs'] as int?;
       final awayRuns = away['runs'] as int?;
       
       if (homeRuns != null && awayRuns != null) {
         gameScore = GameScore(homeScore: homeRuns, awayScore: awayRuns);
-        debugPrint('✅ Marcador encontrado: ${away['abbr'] ?? away['market']} $awayRuns - $homeRuns ${home['abbr'] ?? home['market']}');
-      } else {
-        debugPrint('⚠️ Sin marcador: home[runs]=${home['runs']}, away[runs]=${away['runs']}');
-        debugPrint('🔍 Estructura home: ${home.keys.toList()}');
-        debugPrint('🔍 Estructura away: ${away.keys.toList()}');
       }
     }
 
     // Determinar estado del juego
     final status = json['status'] ?? '';
     final isLive = status == 'inprogress';
-    final isCompleted = status == 'closed';
-
-    debugPrint('📊 Estado: $status | En vivo: $isLive | Completado: $isCompleted | Score: ${gameScore?.toString() ?? 'null'}');
 
     return MLBGame(
       id: json['id'] ?? '',
