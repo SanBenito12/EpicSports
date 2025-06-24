@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'dashboard_screen.dart';
+import 'optimized_dashboard_screen.dart';
 // Agregar imports
 import '../services/auth_service.dart';
 
@@ -659,7 +659,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const OptimizedDashboardScreen()),
         );
       }
     } catch (e) {

@@ -1,5 +1,6 @@
 // lib/models/mlb_game.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class MLBGame {
   final String id;
@@ -29,56 +30,35 @@ class MLBGame {
   });
 
   factory MLBGame.fromJson(Map<String, dynamic> json) {
-    // Debug: Imprimir la estructura del JSON para entender mejor los datos
-    print('🔍 Estructura del juego JSON: ${json.keys.toList()}');
+    debugPrint('🔍 Parseando juego: ${json['id']} - Status: ${json['status']}');
     
     GameScore? gameScore;
     
-    // Intentar obtener el marcador de diferentes posibles estructuras
+    // Buscar marcadores de forma simple
     if (json['home'] != null && json['away'] != null) {
       final home = json['home'] as Map<String, dynamic>;
       final away = json['away'] as Map<String, dynamic>;
       
-      // Buscar marcadores en diferentes campos posibles
-      int? homeScore = home['runs'] ?? home['points'] ?? home['score'];
-      int? awayScore = away['runs'] ?? away['points'] ?? away['score'];
+      // Buscar runs (carreras) que es lo más común en MLB
+      final homeRuns = home['runs'] as int?;
+      final awayRuns = away['runs'] as int?;
       
-      if (homeScore != null && awayScore != null) {
-        gameScore = GameScore(homeScore: homeScore, awayScore: awayScore);
-      }
-    }
-    
-    // Si no encontramos marcadores en home/away, buscar en summary o game
-    if (gameScore == null && json['summary'] != null) {
-      final summary = json['summary'] as Map<String, dynamic>;
-      if (summary['home'] != null && summary['away'] != null) {
-        final homeRuns = summary['home']['runs'];
-        final awayRuns = summary['away']['runs'];
-        if (homeRuns != null && awayRuns != null) {
-          gameScore = GameScore(homeScore: homeRuns, awayScore: awayRuns);
-        }
+      if (homeRuns != null && awayRuns != null) {
+        gameScore = GameScore(homeScore: homeRuns, awayScore: awayRuns);
+        debugPrint('✅ Marcador encontrado: ${away['abbr'] ?? away['market']} $awayRuns - $homeRuns ${home['abbr'] ?? home['market']}');
+      } else {
+        debugPrint('⚠️ Sin marcador: home[runs]=${home['runs']}, away[runs]=${away['runs']}');
+        debugPrint('🔍 Estructura home: ${home.keys.toList()}');
+        debugPrint('🔍 Estructura away: ${away.keys.toList()}');
       }
     }
 
-    // Determinar si el juego está en vivo
+    // Determinar estado del juego
     final status = json['status'] ?? '';
-    final isLive = status == 'inprogress' || status == 'live';
+    final isLive = status == 'inprogress';
+    final isCompleted = status == 'closed';
 
-    // Obtener información del inning
-    String? currentInning;
-    String? inningHalf;
-    
-    if (json['inning'] != null) {
-      currentInning = json['inning'].toString();
-    } else if (json['game_inning'] != null) {
-      currentInning = json['game_inning'].toString();
-    }
-    
-    if (json['inning_half'] != null) {
-      inningHalf = json['inning_half'];
-    } else if (json['top_inning'] != null) {
-      inningHalf = json['top_inning'] == true ? 'top' : 'bottom';
-    }
+    debugPrint('📊 Estado: $status | En vivo: $isLive | Completado: $isCompleted | Score: ${gameScore?.toString() ?? 'null'}');
 
     return MLBGame(
       id: json['id'] ?? '',
@@ -87,8 +67,8 @@ class MLBGame {
       homeTeam: Team.fromJson(json['home'] ?? {}),
       awayTeam: Team.fromJson(json['away'] ?? {}),
       score: gameScore,
-      inning: currentInning,
-      inningHalf: inningHalf,
+      inning: json['inning']?.toString(),
+      inningHalf: json['inning_half'],
       venue: Venue.fromJson(json['venue'] ?? {}),
       isLive: isLive,
       statusDetail: json['status_detail'],
@@ -122,12 +102,8 @@ class MLBGame {
     } else if (isCompleted) {
       return "MLB - FINAL";
     } else {
-      return "MLB - PROGRAMADO";
+      return "MLB";
     }
-  }
-
-  String get gameStatusText {
-    return _getStatusText();
   }
 
   bool get isScheduled {
@@ -135,7 +111,7 @@ class MLBGame {
   }
 
   bool get isCompleted {
-    return status == 'closed' || status == 'complete';
+    return status == 'closed';
   }
 
   DateTime? get scheduledTime {
@@ -143,41 +119,6 @@ class MLBGame {
       return DateTime.parse(scheduled);
     } catch (e) {
       return null;
-    }
-  }
-
-  String get displayScore {
-    if (score != null) {
-      return "${score!.awayScore} - ${score!.homeScore}";
-    } else if (isCompleted) {
-      return "Final";
-    } else if (isLive) {
-      return "En Vivo";
-    } else {
-      return formattedTime;
-    }
-  }
-
-  String _getStatusText() {
-    switch (status) {
-      case 'scheduled':
-        return 'Programado';
-      case 'inprogress':
-      case 'live':
-        return 'En Vivo';
-      case 'closed':
-      case 'complete':
-        return 'Final';
-      case 'postponed':
-        return 'Pospuesto';
-      case 'cancelled':
-        return 'Cancelado';
-      case 'delayed':
-        return 'Retrasado';
-      case 'suspended':
-        return 'Suspendido';
-      default:
-        return statusDetail ?? 'Programado';
     }
   }
 
@@ -197,6 +138,10 @@ class MLBGame {
       'awayTeam': awayTeam.name,
       'scheduled': scheduled,
       'status': status,
+      'score': score != null ? {
+        'homeScore': score!.homeScore,
+        'awayScore': score!.awayScore,
+      } : null,
       'isNotified': false,
       'createdAt': FieldValue.serverTimestamp(),
     };
@@ -221,15 +166,21 @@ class Team {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       market: json['market'] ?? '',
-      abbreviation: json['abbr'] ?? json['abbreviation'] ?? '',
+      abbreviation: json['abbr'] ?? json['abbreviation'] ?? json['alias'] ?? '',
     );
   }
 
-  String get fullName => market.isNotEmpty && name.isNotEmpty 
-    ? "$market $name" 
-    : name.isNotEmpty 
-      ? name 
-      : abbreviation;
+  String get fullName {
+    if (market.isNotEmpty && name.isNotEmpty) {
+      return "$market $name";
+    } else if (name.isNotEmpty) {
+      return name;
+    } else if (abbreviation.isNotEmpty) {
+      return abbreviation;
+    } else {
+      return "Equipo";
+    }
+  }
 }
 
 class GameScore {
@@ -272,7 +223,7 @@ class Venue {
     } else if (name.isNotEmpty) {
       return name;
     } else {
-      return "Ubicación TBD";
+      return "Estadio";
     }
   }
 }
