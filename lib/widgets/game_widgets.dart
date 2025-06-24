@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/mlb_game.dart';
+import '../services/team_logo_service.dart';
 
 /// Widget para mostrar todos los partidos del día
 class TodayMatchesWidget extends StatelessWidget {
@@ -170,7 +171,7 @@ class FinishedScoresWidget extends StatelessWidget {
   }
 }
 
-/// Card base para cualquier partido
+/// Card base para cualquier partido - FIXED LAYOUT
 class _GameCard extends StatelessWidget {
   final MLBGame game;
   final VoidCallback onTap;
@@ -189,6 +190,7 @@ class _GameCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -203,12 +205,13 @@ class _GameCard extends StatelessWidget {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildStatusBadge(),
-                const Spacer(),
                 Text(
                   game.formattedTime,
                   style: GoogleFonts.poppins(
@@ -220,39 +223,49 @@ class _GameCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Teams and score
-            Row(
-              children: [
-                // Away team
-                Expanded(child: _buildTeam(game.awayTeam, game.score?.awayScore)),
-                
-                // VS
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
+            // Teams and score - FIXED
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  // Away team
+                  Expanded(
+                    child: _buildTeam(game.awayTeam, game.score?.awayScore),
                   ),
-                  child: Text(
-                    'VS',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
+                  
+                  // VS
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'VS',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                
-                // Home team
-                Expanded(child: _buildTeam(game.homeTeam, game.score?.homeScore)),
-              ],
+                  
+                  // Home team
+                  Expanded(
+                    child: _buildTeam(game.homeTeam, game.score?.homeScore),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 12),
 
-            // Footer
+            // Footer - FIXED
             Row(
               children: [
+                // Notification button
                 GestureDetector(
                   onTap: onNotificationToggle,
                   child: Container(
@@ -286,18 +299,25 @@ class _GameCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Text(
-                      game.venue.location,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.grey[600],
+                // Location
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          game.venue.location,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -343,32 +363,18 @@ class _GameCard extends StatelessWidget {
   }
 
   Widget _buildTeam(Team team, int? score) {
+    final abbreviation = _getSafeAbbreviation(team);
+    
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Team logo/abbreviation
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              team.abbreviation,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-        ),
+        // Team logo
+        _buildSafeTeamLogo(abbreviation),
         const SizedBox(height: 8),
         
         // Team name
         Text(
-          team.name,
+          team.name.isNotEmpty ? team.name : abbreviation,
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -399,9 +405,44 @@ class _GameCard extends StatelessWidget {
       ],
     );
   }
+
+  String _getSafeAbbreviation(Team team) {
+    if (team.abbreviation.isNotEmpty) {
+      return team.abbreviation;
+    }
+    if (team.name.isNotEmpty) {
+      return team.name.substring(0, 3).toUpperCase();
+    }
+    return 'TBD';
+  }
+
+  Widget _buildSafeTeamLogo(String abbreviation) {
+    try {
+      return TeamLogoService.buildMediumTeamLogo(abbreviation);
+    } catch (e) {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.blue[400],
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            abbreviation,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+  }
 }
 
-/// Card especializada para partidos en vivo
+/// Card especializada para partidos en vivo - FIXED
 class _LiveGameCard extends StatelessWidget {
   final MLBGame game;
   final VoidCallback onTap;
@@ -413,6 +454,7 @@ class _LiveGameCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -424,6 +466,7 @@ class _LiveGameCard extends StatelessWidget {
           border: Border.all(color: Colors.red[200]!),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Live indicator
             Row(
@@ -458,21 +501,30 @@ class _LiveGameCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Score display
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildLiveTeam(game.awayTeam, game.score?.awayScore),
-                Text(
-                  '-',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red[600],
+            // Score display with logos - FIXED
+            IntrinsicHeight(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: _buildLiveTeam(game.awayTeam, game.score?.awayScore),
                   ),
-                ),
-                _buildLiveTeam(game.homeTeam, game.score?.homeScore),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '-',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[600],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildLiveTeam(game.homeTeam, game.score?.homeScore),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -481,12 +533,17 @@ class _LiveGameCard extends StatelessWidget {
   }
 
   Widget _buildLiveTeam(Team team, int? score) {
+    final abbreviation = _getSafeAbbreviation(team);
+    
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
+        _buildSafeTeamLogo(abbreviation),
+        const SizedBox(height: 8),
         Text(
-          team.abbreviation,
+          abbreviation,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Colors.red[700],
           ),
@@ -503,9 +560,44 @@ class _LiveGameCard extends StatelessWidget {
       ],
     );
   }
+
+  String _getSafeAbbreviation(Team team) {
+    if (team.abbreviation.isNotEmpty) {
+      return team.abbreviation;
+    }
+    if (team.name.isNotEmpty) {
+      return team.name.substring(0, 3).toUpperCase();
+    }
+    return 'TBD';
+  }
+
+  Widget _buildSafeTeamLogo(String abbreviation) {
+    try {
+      return TeamLogoService.buildMediumTeamLogo(abbreviation);
+    } catch (e) {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.red[400],
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            abbreviation,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+  }
 }
 
-/// Card especializada para partidos terminados
+/// Card especializada para partidos terminados - FIXED
 class _FinishedGameCard extends StatelessWidget {
   final MLBGame game;
   final VoidCallback onTap;
@@ -522,61 +614,72 @@ class _FinishedGameCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: Row(
-          children: [
-            // Away team
-            Expanded(
-              child: _buildFinishedTeam(
-                game.awayTeam, 
-                game.score?.awayScore, 
-                isWinner: awayWon,
-              ),
-            ),
-            
-            // Final indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'FINAL',
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Away team
+              Expanded(
+                child: _buildFinishedTeam(
+                  game.awayTeam, 
+                  game.score?.awayScore, 
+                  isWinner: awayWon,
                 ),
               ),
-            ),
-            
-            // Home team
-            Expanded(
-              child: _buildFinishedTeam(
-                game.homeTeam, 
-                game.score?.homeScore, 
-                isWinner: homeWon,
+              
+              // Final indicator
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'FINAL',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              
+              // Home team
+              Expanded(
+                child: _buildFinishedTeam(
+                  game.homeTeam, 
+                  game.score?.homeScore, 
+                  isWinner: homeWon,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFinishedTeam(Team team, int? score, {bool isWinner = false}) {
+    final abbreviation = _getSafeAbbreviation(team);
+    
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
+        _buildSafeTeamLogo(abbreviation),
+        const SizedBox(height: 6),
         Text(
-          team.abbreviation,
+          abbreviation,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: isWinner ? FontWeight.bold : FontWeight.w500,
             color: isWinner ? Colors.green[700] : Colors.grey[700],
           ),
@@ -591,7 +694,7 @@ class _FinishedGameCard extends StatelessWidget {
           child: Text(
             score?.toString() ?? '0',
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: isWinner ? Colors.green[700] : Colors.grey[700],
             ),
@@ -599,5 +702,40 @@ class _FinishedGameCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _getSafeAbbreviation(Team team) {
+    if (team.abbreviation.isNotEmpty) {
+      return team.abbreviation;
+    }
+    if (team.name.isNotEmpty) {
+      return team.name.substring(0, 3).toUpperCase();
+    }
+    return 'TBD';
+  }
+
+  Widget _buildSafeTeamLogo(String abbreviation) {
+    try {
+      return TeamLogoService.buildSmallTeamLogo(abbreviation);
+    } catch (e) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.grey[400],
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            abbreviation,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
