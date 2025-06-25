@@ -4,7 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../models/mlb_game.dart';
+import '../models/simple_mlb_models.dart'; 
 import 'package:flutter/foundation.dart';
 
 class PushNotificationService {

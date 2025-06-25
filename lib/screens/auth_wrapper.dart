@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'optimized_dashboard_screen.dart';
+import 'simple_dashboard_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   final AuthService _authService = AuthService();
@@ -21,7 +21,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const OptimizedDashboardScreen();
+          return const SimpleDashboardScreen();
         }
 
         return const LoginScreen();

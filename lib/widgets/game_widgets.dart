@@ -1,8 +1,7 @@
 // lib/widgets/game_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/mlb_game.dart';
-import '../services/team_logo_service.dart';
+import '../models/simple_mlb_models.dart'; // ✅ IMPORT CORREGIDO
 
 /// Widget para mostrar todos los partidos del día
 class TodayMatchesWidget extends StatelessWidget {
@@ -368,8 +367,8 @@ class _GameCard extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Team logo
-        _buildSafeTeamLogo(abbreviation),
+        // Team logo - Simplificado sin TeamLogoService
+        _buildSimpleTeamLogo(abbreviation),
         const SizedBox(height: 8),
         
         // Team name
@@ -416,28 +415,38 @@ class _GameCard extends StatelessWidget {
     return 'TBD';
   }
 
-  Widget _buildSafeTeamLogo(String abbreviation) {
-    try {
-      return TeamLogoService.buildMediumTeamLogo(abbreviation);
-    } catch (e) {
-      return Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.blue[400],
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            abbreviation,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+  Widget _buildSimpleTeamLogo(String abbreviation) {
+    // Logo simplificado sin dependencias externas
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: _getTeamColor(abbreviation),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          abbreviation,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  Color _getTeamColor(String abbreviation) {
+    // Colores básicos por equipo
+    switch (abbreviation.toUpperCase()) {
+      case 'NYY': return Colors.blue[900]!;
+      case 'BOS': return Colors.red[700]!;
+      case 'LAD': return Colors.blue[600]!;
+      case 'SF': return Colors.orange[700]!;
+      case 'CHC': return Colors.blue[600]!;
+      case 'NYM': return Colors.blue[700]!;
+      default: return Colors.blue[400]!;
     }
   }
 }
@@ -538,7 +547,7 @@ class _LiveGameCard extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSafeTeamLogo(abbreviation),
+        _buildSimpleTeamLogo(abbreviation),
         const SizedBox(height: 8),
         Text(
           abbreviation,
@@ -571,29 +580,25 @@ class _LiveGameCard extends StatelessWidget {
     return 'TBD';
   }
 
-  Widget _buildSafeTeamLogo(String abbreviation) {
-    try {
-      return TeamLogoService.buildMediumTeamLogo(abbreviation);
-    } catch (e) {
-      return Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.red[400],
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            abbreviation,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+  Widget _buildSimpleTeamLogo(String abbreviation) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.red[400],
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          abbreviation,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -674,7 +679,7 @@ class _FinishedGameCard extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSafeTeamLogo(abbreviation),
+        _buildSimpleTeamLogo(abbreviation),
         const SizedBox(height: 6),
         Text(
           abbreviation,
@@ -714,28 +719,24 @@ class _FinishedGameCard extends StatelessWidget {
     return 'TBD';
   }
 
-  Widget _buildSafeTeamLogo(String abbreviation) {
-    try {
-      return TeamLogoService.buildSmallTeamLogo(abbreviation);
-    } catch (e) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey[400],
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            abbreviation,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+  Widget _buildSimpleTeamLogo(String abbreviation) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.grey[400],
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          abbreviation,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 }
