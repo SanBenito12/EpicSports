@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
-import '../models/simple_mlb_models.dart'; // ✅ IMPORT CORREGIDO
+import '../models/simple_mlb_models.dart';
 import '../services/simple_mlb_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -22,7 +22,6 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   List<MLBGame> _allGames = [];
   List<MLBGame> _liveGames = [];
   List<MLBGame> _finishedGames = [];
-  // Removed _scheduledGames to fix unused field warning
 
   // State
   bool _isLoading = true;
@@ -68,6 +67,9 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         for (int i = 0; i < games.take(3).length; i++) {
           final game = games[i];
           debugPrint('  Juego ${i + 1}: ${game.awayTeam.name} vs ${game.homeTeam.name} - Estado: ${game.status}');
+          if (game.score != null) {
+            debugPrint('    Marcador: ${game.score!.awayScore} - ${game.score!.homeScore}');
+          }
         }
       }
     } catch (e) {
@@ -127,6 +129,26 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                     Icon(Icons.wifi),
                     SizedBox(width: 8),
                     Text('Test Conexión'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'get_yesterday',
+                child: Row(
+                  children: [
+                    Icon(Icons.history),
+                    SizedBox(width: 8),
+                    Text('Juegos de Ayer'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'debug_api',
+                child: Row(
+                  children: [
+                    Icon(Icons.bug_report),
+                    SizedBox(width: 8),
+                    Text('Debug API Response'),
                   ],
                 ),
               ),
@@ -208,6 +230,17 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
               color: Colors.blue[600],
             ),
           ),
+          // Mostrar información de marcadores
+          if (_allGames.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Con marcadores: ${_allGames.where((g) => g.score != null).length}',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.green[600],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -301,11 +334,29 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     );
   }
 
-  /// Card de juego individual - SIMPLIFICADO
+  /// Card de juego individual - MEJORADO con marcadores
   Widget _buildGameCard(MLBGame game, {bool isLive = false, bool isFinished = false}) {
     Color? cardColor;
     if (isLive) cardColor = Colors.red[50];
     if (isFinished) cardColor = Colors.grey[50];
+
+    // Determinar colores del marcador
+    Color? awayScoreColor;
+    Color? homeScoreColor;
+    
+    if (game.score != null) {
+      if (game.score!.awayWins) {
+        awayScoreColor = Colors.green[700];
+        homeScoreColor = Colors.grey[600];
+      } else if (game.score!.homeWins) {
+        homeScoreColor = Colors.green[700];
+        awayScoreColor = Colors.grey[600];
+      } else {
+        // Empate o juego en vivo
+        awayScoreColor = isLive ? Colors.red[700] : Colors.blue[700];
+        homeScoreColor = isLive ? Colors.red[700] : Colors.blue[700];
+      }
+    }
 
     return Container(
       width: double.infinity,
@@ -338,18 +389,32 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildStatusBadge(game.status),
-              Text(
-                game.formattedTime,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    game.formattedTime,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  if (game.inning != null && game.isLive)
+                    Text(
+                      'Inning ${game.inning}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.red[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Equipos y marcador - SIMPLIFICADO
+          // Equipos y marcador - MEJORADO
           Row(
             children: [
               // Equipo visitante
@@ -357,10 +422,10 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                 child: Column(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.blue[400],
+                        color: _getTeamColor(game.awayTeam.abbreviation),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -376,43 +441,76 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
                       game.awayTeam.name,
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                       textAlign: TextAlign.center,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (game.score != null)
-                      Text(
-                        '${game.score!.awayScore}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
+                    const SizedBox(height: 8),
+                    // Marcador visitante
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: game.score != null ? Colors.white : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: awayScoreColor ?? Colors.grey[300]!,
+                          width: game.score?.awayWins == true ? 2 : 1,
                         ),
                       ),
+                      child: Text(
+                        game.score?.awayScore.toString() ?? '-',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: awayScoreColor ?? Colors.grey[500],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
               
-              // VS o marcador
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  game.score != null
-                      ? 'VS'
-                      : 'VS',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isLive ? Colors.red[700] : Colors.grey[600],
-                  ),
+              // VS y marcador central
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isLive ? Colors.red[100] : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'VS',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isLive ? Colors.red[700] : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                    if (game.score != null) 
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '${game.score!.awayScore} - ${game.score!.homeScore}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isLive ? Colors.red[700] : Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               
@@ -421,10 +519,10 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                 child: Column(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.red[400],
+                        color: _getTeamColor(game.homeTeam.abbreviation),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -440,64 +538,98 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
                       game.homeTeam.name,
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                       textAlign: TextAlign.center,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (game.score != null)
-                      Text(
-                        '${game.score!.homeScore}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red[700],
+                    const SizedBox(height: 8),
+                    // Marcador local
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: game.score != null ? Colors.white : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: homeScoreColor ?? Colors.grey[300]!,
+                          width: game.score?.homeWins == true ? 2 : 1,
                         ),
                       ),
+                      child: Text(
+                        game.score?.homeScore.toString() ?? '-',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: homeScoreColor ?? Colors.grey[500],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Footer con venue
-          if (game.venue.location.isNotEmpty)
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Expanded(
+          // Footer con venue y estado
+          Row(
+            children: [
+              Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  game.venue.location,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (game.score != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   child: Text(
-                    game.venue.location,
+                    'Con marcador ✅',
                     style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.grey[600],
+                      fontSize: 10,
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w600,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (game.inning != null)
-                  Text(
-                    'Inning ${game.inning}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-              ],
-            ),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Color _getTeamColor(String abbreviation) {
+    // Colores básicos por equipo
+    switch (abbreviation.toUpperCase()) {
+      case 'NYY': return Colors.blue[900]!;
+      case 'BOS': return Colors.red[700]!;
+      case 'LAD': return Colors.blue[600]!;
+      case 'SF': return Colors.orange[700]!;
+      case 'CHC': return Colors.blue[600]!;
+      case 'NYM': return Colors.blue[700]!;
+      case 'HOU': return Colors.orange[800]!;
+      case 'ATL': return Colors.red[600]!;
+      default: return Colors.blue[400]!;
+    }
   }
 
   Widget _buildStatusBadge(String status) {
@@ -634,12 +766,101 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
       case 'test_connection':
         _testConnection();
         break;
+      case 'get_yesterday':
+        _getYesterdayGames();
+        break;
+      case 'debug_api':
+        _debugApiResponse();
+        break;
       case 'service_info':
         _showServiceInfo();
         break;
       case 'logout':
         _handleLogout();
         break;
+    }
+  }
+
+  /// Obtener partidos de ayer para testing
+  Future<void> _getYesterdayGames() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Obteniendo juegos de ayer...'),
+          ],
+        ),
+      ),
+    );
+
+    final yesterdayGames = await SimpleMLBService.getYesterdayGames();
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+      
+      // Actualizar estado con juegos de ayer para testing
+      setState(() {
+        _allGames = yesterdayGames;
+        _liveGames = SimpleMLBService.getLiveGames(yesterdayGames);
+        _finishedGames = SimpleMLBService.getFinishedGames(yesterdayGames);
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${yesterdayGames.length} juegos de ayer cargados'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
+  }
+
+  /// Debug: Mostrar respuesta RAW de la API
+  Future<void> _debugApiResponse() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Obteniendo respuesta RAW...'),
+          ],
+        ),
+      ),
+    );
+
+    final rawResponse = await SimpleMLBService.getDebugApiResponse();
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Debug API Response', style: GoogleFonts.poppins()),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: SingleChildScrollView(
+              child: Text(
+                rawResponse,
+                style: GoogleFonts.sourceCodePro(fontSize: 10),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -687,9 +908,19 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
           children: [
             Text('Servicio: ${info['service']}'),
             Text('API configurada: ${info['api_configured']}'),
+            Text('Preview API Key: ${info['api_key_preview']}'),
             Text('URL base: ${info['base_url']}'),
             Text('Última llamada: ${info['last_call'] ?? 'Nunca'}'),
             Text('Intervalo mínimo: ${info['min_interval_seconds']}s'),
+            const SizedBox(height: 16),
+            Text(
+              'Estadísticas de Juegos:',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            Text('• Total cargados: ${_allGames.length}'),
+            Text('• En vivo: ${_liveGames.length}'),
+            Text('• Terminados: ${_finishedGames.length}'),
+            Text('• Con marcadores: ${_allGames.where((g) => g.score != null).length}'),
           ],
         ),
         actions: [
