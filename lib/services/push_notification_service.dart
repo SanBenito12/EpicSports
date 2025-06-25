@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/simple_mlb_models.dart'; 
 import 'package:flutter/foundation.dart';
+import 'dart:async'; // ✅ Agregar import para Timer
 
 class PushNotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -167,6 +168,11 @@ class PushNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      // Expandir para mostrar más texto
+      styleInformation: BigTextStyleInformation(''),
+      // Vibración personalizada
+      enableVibration: true,
+      playSound: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -189,48 +195,156 @@ class PushNotificationService {
     );
   }
 
-  // 🧪 NOTIFICACIÓN DE PRUEBA
+  // 🏟️ NOTIFICACIÓN DE BIENVENIDA AUTOMÁTICA
   static Future<void> showTestNotification() async {
+    final user = _auth.currentUser;
+    final userName = user?.displayName ?? 'Usuario';
+    
     await _showLocalNotification(
-      title: '🏟️ ¡Bienvenido a EpicSports!',
-      body: 'Las notificaciones están funcionando correctamente. ¡Disfruta los partidos!',
-      payload: 'test_notification',
+      title: '⚾ ¡Bienvenido a EpicSports, $userName!',
+      body: '🔔 Las notificaciones están activas. Selecciona los partidos que quieres seguir y recibe alertas cuando empiecen.',
+      payload: 'welcome_notification',
     );
-    debugPrint('🧪 Notificación de prueba enviada');
+    debugPrint('🎉 Notificación de bienvenida enviada a $userName');
   }
 
-  // Notificación cuando empieza un partido
+  // 🔴 Notificación cuando empieza un partido
   static Future<void> notifyGameStarting(MLBGame game) async {
     await _showLocalNotification(
-      title: '🔴 ¡Partido en vivo!',
-      body: '${game.awayTeam.name} vs ${game.homeTeam.name} ha comenzado',
+      title: '🔴 ¡Partido EN VIVO!',
+      body: '${game.awayTeam.name} vs ${game.homeTeam.name} acaba de comenzar en ${game.venue.name}',
       payload: game.id,
     );
     
     // También guardar en Firestore para historial
     await _saveNotificationHistory(game, 'game_started');
+    debugPrint('🔴 Notificación de inicio enviada: ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}');
   }
 
-  // Notificación para recordatorio de partido próximo
+  // ⏰ Notificación para recordatorio de partido próximo
   static Future<void> notifyGameStartingSoon(MLBGame game, int minutesUntilStart) async {
     await _showLocalNotification(
-      title: '⏰ Partido próximo',
-      body: '${game.awayTeam.name} vs ${game.homeTeam.name} empieza en $minutesUntilStart minutos',
+      title: '⏰ Partido próximo - ${minutesUntilStart} minutos',
+      body: '${game.awayTeam.name} vs ${game.homeTeam.name} empezará pronto en ${game.venue.name}',
       payload: game.id,
     );
     
     await _saveNotificationHistory(game, 'game_reminder');
+    debugPrint('⏰ Recordatorio enviado: ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation} en $minutesUntilStart min');
   }
 
-  // Notificación para cambio de marcador
+  // 📊 Notificación para cambio de marcador
   static Future<void> notifyScoreUpdate(MLBGame game) async {
     if (game.score != null) {
+      String title = '📊 Actualización de marcador';
+      String body = '${game.awayTeam.name} ${game.score!.awayScore} - ${game.score!.homeScore} ${game.homeTeam.name}';
+      
+      // Agregar contexto si hay ganador
+      if (game.score!.awayWins) {
+        body += ' - ${game.awayTeam.name} va ganando';
+      } else if (game.score!.homeWins) {
+        body += ' - ${game.homeTeam.name} va ganando';
+      } else if (game.score!.isTied) {
+        body += ' - Empate';
+      }
+      
       await _showLocalNotification(
-        title: '📊 Actualización de marcador',
-        body: '${game.awayTeam.abbreviation} ${game.score!.awayScore} - ${game.score!.homeScore} ${game.homeTeam.abbreviation}',
+        title: title,
+        body: body,
         payload: game.id,
       );
+      
+      await _saveNotificationHistory(game, 'score_update');
+      debugPrint('📊 Marcador actualizado: ${game.awayTeam.abbreviation} ${game.score!.awayScore} - ${game.score!.homeScore} ${game.homeTeam.abbreviation}');
     }
+  }
+
+  // 🎉 Notificación cuando termina un partido
+  static Future<void> notifyGameFinished(MLBGame game) async {
+    if (game.score != null) {
+      String winner = '';
+      if (game.score!.awayWins) {
+        winner = '🏆 ${game.awayTeam.name} ganó';
+      } else if (game.score!.homeWins) {
+        winner = '🏆 ${game.homeTeam.name} ganó';
+      } else {
+        winner = '🤝 Empate';
+      }
+      
+      await _showLocalNotification(
+        title: '🏁 Partido terminado',
+        body: '$winner - ${game.awayTeam.name} ${game.score!.awayScore} - ${game.score!.homeScore} ${game.homeTeam.name}',
+        payload: game.id,
+      );
+      
+      await _saveNotificationHistory(game, 'game_finished');
+      debugPrint('🏁 Partido terminado: $winner');
+    }
+  }
+
+  // 🧪 SIMULACIÓN DE INICIO DE JUEGO (para debug)
+  static Future<void> simulateGameStart() async {
+    // Crear un juego de prueba realista
+    final testGame = MLBGame(
+      id: 'simulation_${DateTime.now().millisecondsSinceEpoch}',
+      status: 'inprogress',
+      scheduled: DateTime.now().toIso8601String(),
+      homeTeam: Team(
+        id: 'simulation_home',
+        name: 'New York Yankees',
+        market: 'New York',
+        abbreviation: 'NYY',
+      ),
+      awayTeam: Team(
+        id: 'simulation_away', 
+        name: 'Boston Red Sox',
+        market: 'Boston',
+        abbreviation: 'BOS',
+      ),
+      venue: Venue(
+        id: 'yankee_stadium',
+        name: 'Yankee Stadium',
+        city: 'New York',
+        state: 'NY',
+      ),
+      isLive: true,
+      score: GameScore(homeScore: 0, awayScore: 0),
+    );
+
+    await notifyGameStarting(testGame);
+    debugPrint('🎮 Simulación de inicio de juego ejecutada');
+  }
+
+  // 🧪 SIMULACIÓN DE CAMBIO DE MARCADOR (para debug)
+  static Future<void> simulateScoreUpdate() async {
+    final testGame = MLBGame(
+      id: 'score_simulation_${DateTime.now().millisecondsSinceEpoch}',
+      status: 'inprogress',
+      scheduled: DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+      homeTeam: Team(
+        id: 'simulation_home',
+        name: 'Los Angeles Dodgers',
+        market: 'Los Angeles',
+        abbreviation: 'LAD',
+      ),
+      awayTeam: Team(
+        id: 'simulation_away', 
+        name: 'San Francisco Giants',
+        market: 'San Francisco',
+        abbreviation: 'SF',
+      ),
+      venue: Venue(
+        id: 'dodger_stadium',
+        name: 'Dodger Stadium',
+        city: 'Los Angeles',
+        state: 'CA',
+      ),
+      isLive: true,
+      score: GameScore(homeScore: 3, awayScore: 2),
+    );
+
+    await notifyScoreUpdate(testGame);
+    debugPrint('🎮 Simulación de cambio de marcador ejecutada');
   }
 
   // Guardar historial de notificaciones
@@ -243,8 +357,14 @@ class PushNotificationService {
           'gameId': game.id,
           'type': type,
           'title': '${game.awayTeam.name} vs ${game.homeTeam.name}',
+          'awayTeam': game.awayTeam.name,
+          'homeTeam': game.homeTeam.name,
+          'venue': game.venue.name,
+          'status': game.status,
+          'score': game.score != null ? '${game.score!.awayScore}-${game.score!.homeScore}' : null,
           'timestamp': FieldValue.serverTimestamp(),
         });
+        debugPrint('✅ Historial de notificación guardado: $type');
       }
     } catch (e) {
       debugPrint('❌ Error guardando historial de notificación: $e');
@@ -306,34 +426,191 @@ class PushNotificationService {
     return settings.authorizationStatus == AuthorizationStatus.authorized;
   }
 
-  // Método para testing - simular que empezó un partido
-  static Future<void> simulateGameStart() async {
-    // Crear un juego de prueba
-    final testGame = MLBGame(
-      id: 'test_game_${DateTime.now().millisecondsSinceEpoch}',
-      status: 'inprogress',
-      scheduled: DateTime.now().toIso8601String(),
-      homeTeam: Team(
-        id: 'test_home',
-        name: 'Test Home Team',
-        market: 'Test City',
-        abbreviation: 'THT',
-      ),
-      awayTeam: Team(
-        id: 'test_away', 
-        name: 'Test Away Team',
-        market: 'Test Town',
-        abbreviation: 'TAT',
-      ),
-      venue: Venue(
-        id: 'test_venue',
-        name: 'Test Stadium',
-        city: 'Test City',
-        state: 'Test State',
-      ),
-      isLive: true,
-    );
+  // 🧪 SUITE COMPLETA DE TESTING
+  static Future<void> runNotificationTests() async {
+    debugPrint('🧪 Iniciando suite de tests de notificaciones...');
+    
+    // Test 1: Notificación básica
+    await Future.delayed(const Duration(seconds: 1));
+    await showTestNotification();
+    
+    // Test 2: Simulación de inicio de juego
+    await Future.delayed(const Duration(seconds: 3));
+    await simulateGameStart();
+    
+    // Test 3: Simulación de cambio de marcador
+    await Future.delayed(const Duration(seconds: 5));
+    await simulateScoreUpdate();
+    
+    debugPrint('✅ Suite de tests completada');
+  }
 
-    await notifyGameStarting(testGame);
+  // Obtener historial de notificaciones del usuario
+  static Future<List<Map<String, dynamic>>> getNotificationHistory() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return [];
+
+      final querySnapshot = await _firestore
+          .collection('notification_history')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'type': data['type'] ?? 'unknown',
+          'title': data['title'] ?? 'Sin título',
+          'awayTeam': data['awayTeam'] ?? '',
+          'homeTeam': data['homeTeam'] ?? '',
+          'venue': data['venue'] ?? '',
+          'score': data['score'],
+          'timestamp': data['timestamp'],
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error obteniendo historial: $e');
+      return [];
+    }
+  }
+
+  // Limpiar historial de notificaciones antiguas
+  static Future<void> cleanOldNotificationHistory() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+      
+      final querySnapshot = await _firestore
+          .collection('notification_history')
+          .where('userId', isEqualTo: user.uid)
+          .where('timestamp', isLessThan: Timestamp.fromDate(oneWeekAgo))
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      debugPrint('✅ ${querySnapshot.docs.length} notificaciones antiguas eliminadas');
+    } catch (e) {
+      debugPrint('❌ Error limpiando historial: $e');
+    }
+  }
+
+  // Configurar notificaciones programadas (para recordatorios)
+  static Future<void> scheduleGameReminder(MLBGame game, int minutesBefore) async {
+    try {
+      final gameTime = game.scheduledTime;
+      if (gameTime == null) return;
+
+      final reminderTime = gameTime.subtract(Duration(minutes: minutesBefore));
+      final now = DateTime.now();
+
+      if (reminderTime.isAfter(now)) {
+        // Calcular delay hasta el recordatorio
+        final delay = reminderTime.difference(now);
+        
+        debugPrint('📅 Recordatorio programado para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation} en ${delay.inMinutes} minutos');
+        
+        // ✅ Usar Timer.periodic o simplemente Timer
+        Timer(delay, () async {
+          await notifyGameStartingSoon(game, minutesBefore);
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error programando recordatorio: $e');
+    }
+  }
+
+  // Cancelar todas las notificaciones pendientes
+  static Future<void> cancelAllNotifications() async {
+    try {
+      await _localNotifications.cancelAll();
+      debugPrint('✅ Todas las notificaciones canceladas');
+    } catch (e) {
+      debugPrint('❌ Error cancelando notificaciones: $e');
+    }
+  }
+
+  // Estadísticas de notificaciones
+  static Future<Map<String, int>> getNotificationStats() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return {
+          'total_sent': 0,
+          'game_started': 0,
+          'reminders': 0,
+          'score_updates': 0,
+          'game_finished': 0,
+        };
+      }
+
+      final querySnapshot = await _firestore
+          .collection('notification_history')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      int total = querySnapshot.docs.length;
+      int gameStarted = 0;
+      int reminders = 0;
+      int scoreUpdates = 0;
+      int gameFinished = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final type = doc.data()['type'] as String? ?? '';
+        switch (type) {
+          case 'game_started':
+            gameStarted++;
+            break;
+          case 'game_reminder':
+            reminders++;
+            break;
+          case 'score_update':
+            scoreUpdates++;
+            break;
+          case 'game_finished':
+            gameFinished++;
+            break;
+        }
+      }
+
+      return {
+        'total_sent': total,
+        'game_started': gameStarted,
+        'reminders': reminders,
+        'score_updates': scoreUpdates,
+        'game_finished': gameFinished,
+      };
+    } catch (e) {
+      debugPrint('❌ Error obteniendo estadísticas: $e');
+      return {
+        'total_sent': 0,
+        'game_started': 0,
+        'reminders': 0,
+        'score_updates': 0,
+        'game_finished': 0,
+      };
+    }
+  }
+
+  // Información del servicio de notificaciones
+  static Future<Map<String, dynamic>> getServiceInfo() async {
+    final settings = await getPermissionStatus();
+    final isEnabled = await areNotificationsEnabled();
+    
+    return {
+      'permissions_granted': isEnabled,
+      'authorization_status': settings.authorizationStatus.toString(),
+      'alert_enabled': settings.alert == AppleNotificationSetting.enabled,
+      'badge_enabled': settings.badge == AppleNotificationSetting.enabled,
+      'sound_enabled': settings.sound == AppleNotificationSetting.enabled,
+      'channels_created': true, // Android channels
+      'firebase_initialized': true,
+    };
   }
 }

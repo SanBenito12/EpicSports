@@ -5,6 +5,9 @@ import 'dart:async';
 import '../models/simple_mlb_models.dart';
 import '../services/simple_mlb_service.dart';
 import '../services/auth_service.dart';
+import '../services/game_notification_service.dart';
+import '../services/push_notification_service.dart';
+import '../services/game_monitor_service.dart';
 import 'login_screen.dart';
 
 class SimpleDashboardScreen extends StatefulWidget {
@@ -17,11 +20,16 @@ class SimpleDashboardScreen extends StatefulWidget {
 class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   // Services
   final AuthService _authService = AuthService();
+  final GameNotificationService _notificationService = GameNotificationService();
 
   // Data
   List<MLBGame> _allGames = [];
   List<MLBGame> _liveGames = [];
   List<MLBGame> _finishedGames = [];
+  
+  // Notification state
+  List<String> _notificationGames = [];
+  StreamSubscription<List<String>>? _notificationSubscription;
 
   // State
   bool _isLoading = true;
@@ -31,14 +39,71 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadGames();
-    _setupAutoRefresh();
+    _initializeApp();
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _notificationSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Inicialización completa de la app
+  Future<void> _initializeApp() async {
+    try {
+      // 1. Mostrar notificación de bienvenida automática
+      await _showWelcomeNotification();
+      
+      // 2. Inicializar monitor de juegos
+      await _initializeGameMonitor();
+      
+      // 3. Cargar datos
+      await _loadGames();
+      
+      // 4. Configurar subscripción a notificaciones
+      _setupNotificationSubscription();
+      
+      // 5. Configurar auto-refresh
+      _setupAutoRefresh();
+      
+    } catch (e) {
+      debugPrint('❌ Error inicializando app: $e');
+    }
+  }
+
+  /// Mostrar notificación de bienvenida automática
+  Future<void> _showWelcomeNotification() async {
+    try {
+      await PushNotificationService.showTestNotification();
+      debugPrint('✅ Notificación de bienvenida enviada');
+    } catch (e) {
+      debugPrint('❌ Error enviando notificación de bienvenida: $e');
+    }
+  }
+
+  /// Inicializar monitor de juegos
+  Future<void> _initializeGameMonitor() async {
+    try {
+      await GameMonitorService.instance.startMonitoring();
+      debugPrint('✅ Monitor de juegos iniciado');
+    } catch (e) {
+      debugPrint('❌ Error iniciando monitor: $e');
+    }
+  }
+
+  /// Configurar subscripción a notificaciones
+  void _setupNotificationSubscription() {
+    _notificationSubscription = _notificationService
+        .getUserNotificationGamesStream()
+        .listen((gameIds) {
+      if (mounted) {
+        setState(() {
+          _notificationGames = gameIds;
+        });
+        debugPrint('🔔 Notificaciones actualizadas: ${gameIds.length} juegos');
+      }
+    });
   }
 
   /// Cargar juegos de MLB
@@ -83,6 +148,45 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
+  /// Toggle notificación para un juego específico
+  Future<void> _toggleGameNotification(MLBGame game) async {
+    try {
+      final isActive = _notificationGames.contains(game.id);
+      
+      if (isActive) {
+        // Desactivar notificación
+        final success = await _notificationService.removeGameNotification(game.id);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🔕 Notificaciones desactivadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        // Activar notificación
+        final success = await _notificationService.addGameNotification(game);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🔔 Notificaciones activadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error toggling notificación: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cambiar notificación: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   /// Auto-refresh cada 5 minutos
   void _setupAutoRefresh() {
     _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
@@ -105,6 +209,32 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         foregroundColor: Colors.black87,
         elevation: 1,
         actions: [
+          // Indicador de notificaciones activas
+          if (_notificationGames.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.notifications_active, size: 16, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_notificationGames.length}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
           // Botón refresh
           IconButton(
             icon: _isLoading 
@@ -133,6 +263,26 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                 ),
               ),
               const PopupMenuItem(
+                value: 'test_notification',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications),
+                    SizedBox(width: 8),
+                    Text('Test Notificación'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'simulate_game_start',
+                child: Row(
+                  children: [
+                    Icon(Icons.play_circle),
+                    SizedBox(width: 8),
+                    Text('Simular Inicio de Juego'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'get_yesterday',
                 child: Row(
                   children: [
@@ -149,6 +299,16 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                     Icon(Icons.bug_report),
                     SizedBox(width: 8),
                     Text('Debug API Response'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'notification_stats',
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics),
+                    SizedBox(width: 8),
+                    Text('Stats Notificaciones'),
                   ],
                 ),
               ),
@@ -230,6 +390,24 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
               color: Colors.blue[600],
             ),
           ),
+          // Mostrar información de notificaciones
+          if (_notificationGames.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.notifications_active, size: 14, color: Colors.orange[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Notificaciones activas: ${_notificationGames.length}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.orange[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
           // Mostrar información de marcadores
           if (_allGames.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -334,11 +512,14 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     );
   }
 
-  /// Card de juego individual - MEJORADO con marcadores
+  /// Card de juego individual - CON BOTÓN DE NOTIFICACIÓN
   Widget _buildGameCard(MLBGame game, {bool isLive = false, bool isFinished = false}) {
     Color? cardColor;
     if (isLive) cardColor = Colors.red[50];
     if (isFinished) cardColor = Colors.grey[50];
+
+    // Verificar si tiene notificación activa
+    final hasNotification = _notificationGames.contains(game.id);
 
     // Determinar colores del marcador
     Color? awayScoreColor;
@@ -366,11 +547,14 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         color: cardColor ?? Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLive 
-              ? Colors.red[200]! 
-              : isFinished 
-                  ? Colors.grey[300]! 
-                  : Colors.blue[200]!,
+          color: hasNotification 
+              ? Colors.orange[300]!
+              : isLive 
+                  ? Colors.red[200]! 
+                  : isFinished 
+                      ? Colors.grey[300]! 
+                      : Colors.blue[200]!,
+          width: hasNotification ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -384,37 +568,62 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con estado
+          // Header con estado y botón de notificación
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildStatusBadge(game.status),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Text(
-                    game.formattedTime,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        game.formattedTime,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (game.inning != null && game.isLive)
+                        Text(
+                          'Inning ${game.inning}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.red[600],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (game.inning != null && game.isLive)
-                    Text(
-                      'Inning ${game.inning}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: Colors.red[600],
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  // 🔔 BOTÓN DE NOTIFICACIÓN
+                  GestureDetector(
+                    onTap: () => _toggleGameNotification(game),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: hasNotification ? Colors.orange[100] : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: hasNotification ? Colors.orange : Colors.grey[300]!,
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        hasNotification ? Icons.notifications_active : Icons.notifications_none,
+                        size: 20,
+                        color: hasNotification ? Colors.orange[700] : Colors.grey[600],
                       ),
                     ),
+                  ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Equipos y marcador - MEJORADO
+          // Equipos y marcador
           Row(
             children: [
               // Equipo visitante
@@ -579,7 +788,7 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
           const SizedBox(height: 16),
 
-          // Footer con venue y estado
+          // Footer con venue y estado de notificación
           Row(
             children: [
               Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
@@ -594,7 +803,32 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (game.score != null)
+              // Indicador de notificación
+              if (hasNotification)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_active, size: 12, color: Colors.orange[700]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Notificaciones ON',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.orange[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Indicador de marcador
+              if (game.score != null && !hasNotification)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
@@ -628,6 +862,9 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
       case 'NYM': return Colors.blue[700]!;
       case 'HOU': return Colors.orange[800]!;
       case 'ATL': return Colors.red[600]!;
+      case 'TEX': return Colors.red[800]!;
+      case 'OAK': return Colors.green[700]!;
+      case 'SEA': return Colors.teal[700]!;
       default: return Colors.blue[400]!;
     }
   }
@@ -766,11 +1003,20 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
       case 'test_connection':
         _testConnection();
         break;
+      case 'test_notification':
+        _testNotification();
+        break;
+      case 'simulate_game_start':
+        _simulateGameStart();
+        break;
       case 'get_yesterday':
         _getYesterdayGames();
         break;
       case 'debug_api':
         _debugApiResponse();
+        break;
+      case 'notification_stats':
+        _showNotificationStats();
         break;
       case 'service_info':
         _showServiceInfo();
@@ -778,6 +1024,46 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
       case 'logout':
         _handleLogout();
         break;
+    }
+  }
+
+  /// Test de notificación manual
+  Future<void> _testNotification() async {
+    try {
+      await PushNotificationService.showTestNotification();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔔 Notificación de prueba enviada'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error enviando notificación: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Simular inicio de juego
+  Future<void> _simulateGameStart() async {
+    try {
+      await PushNotificationService.simulateGameStart();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎮 Simulación de inicio de juego enviada'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error en simulación: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -864,6 +1150,61 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
+  /// Mostrar estadísticas de notificaciones
+  Future<void> _showNotificationStats() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Obteniendo estadísticas...'),
+          ],
+        ),
+      ),
+    );
+
+    final stats = await _notificationService.getNotificationStats();
+    final monitorStats = GameMonitorService.instance.getMonitorStats();
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Estadísticas de Notificaciones', style: GoogleFonts.poppins()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('📊 Notificaciones del Usuario:', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              Text('• Total activas: ${stats['total']}'),
+              Text('• Programadas: ${stats['scheduled']}'),
+              Text('• En vivo: ${stats['live']}'),
+              Text('• Terminadas: ${stats['finished']}'),
+              const SizedBox(height: 16),
+              Text('🔍 Monitor de Juegos:', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              Text('• Estado: ${monitorStats['is_monitoring'] ? 'Activo' : 'Inactivo'}'),
+              Text('• Juegos monitoreados: ${monitorStats['games_being_monitored']}'),
+              Text('• En vivo: ${monitorStats['live_games_count']}'),
+              Text('• Notificaciones enviadas: ${monitorStats['games_already_notified']}'),
+              Text('• Recordatorios enviados: ${monitorStats['reminders_sent']}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> _testConnection() async {
     showDialog(
       context: context,
@@ -921,6 +1262,7 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
             Text('• En vivo: ${_liveGames.length}'),
             Text('• Terminados: ${_finishedGames.length}'),
             Text('• Con marcadores: ${_allGames.where((g) => g.score != null).length}'),
+            Text('• Con notificaciones: ${_notificationGames.length}'),
           ],
         ),
         actions: [
@@ -956,6 +1298,10 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     );
 
     if (confirmed == true) {
+      // Limpiar notificaciones y parar monitor
+      await _notificationService.clearAllNotifications();
+      GameMonitorService.instance.stopMonitoring();
+      
       await _authService.signOut();
       if (mounted) {
         Navigator.pushReplacement(
