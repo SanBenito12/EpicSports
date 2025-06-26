@@ -1,4 +1,4 @@
-// lib/screens/simple_dashboard_screen.dart
+// lib/screens/simple_dashboard_screen.dart - VERSIÓN MEJORADA
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
@@ -17,7 +17,8 @@ class SimpleDashboardScreen extends StatefulWidget {
   State<SimpleDashboardScreen> createState() => _SimpleDashboardScreenState();
 }
 
-class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
+class _SimpleDashboardScreenState extends State<SimpleDashboardScreen>
+    with TickerProviderStateMixin {
   // Services
   final AuthService _authService = AuthService();
   final GameNotificationService _notificationService = GameNotificationService();
@@ -36,9 +37,16 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   String? _errorMessage;
   Timer? _refreshTimer;
 
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
     _initializeApp();
   }
 
@@ -46,28 +54,48 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   void dispose() {
     _refreshTimer?.cancel();
     _notificationSubscription?.cancel();
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
+  }
+
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack));
   }
 
   /// Inicialización completa de la app
   Future<void> _initializeApp() async {
     try {
-      // 1. Mostrar notificación de bienvenida automática
       await _showWelcomeNotification();
-      // 2. Inicializar monitor de juegos
       await _initializeGameMonitor();
-      // 3. Cargar datos
       await _loadGames();
-      // 4. Configurar subscripción a notificaciones
       _setupNotificationSubscription();
-      // 5. Configurar auto-refresh
       _setupAutoRefresh();
+      
+      // Iniciar animaciones
+      _fadeController.forward();
+      await Future.delayed(const Duration(milliseconds: 200));
+      _slideController.forward();
     } catch (e) {
       debugPrint('❌ Error inicializando app: $e');
     }
   }
 
-  /// Mostrar notificación de bienvenida automática
   Future<void> _showWelcomeNotification() async {
     try {
       await PushNotificationService.showTestNotification();
@@ -77,7 +105,6 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
-  /// Inicializar monitor de juegos
   Future<void> _initializeGameMonitor() async {
     try {
       await GameMonitorService.instance.startMonitoring();
@@ -86,7 +113,6 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
-  /// Configurar subscripción a notificaciones
   void _setupNotificationSubscription() {
     _notificationSubscription = _notificationService
         .getUserNotificationGamesStream()
@@ -100,7 +126,6 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     });
   }
 
-  /// Cargar juegos de MLB
   Future<void> _loadGames() async {
     setState(() {
       _isLoading = true;
@@ -126,52 +151,66 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
-  /// Toggle notificación para un juego específico
   Future<void> _toggleGameNotification(MLBGame game) async {
     try {
       final isActive = _notificationGames.contains(game.id);
       if (isActive) {
-        // Desactivar notificación
         final success = await _notificationService.removeGameNotification(game.id);
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🔕 Notificaciones desactivadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+          _showCustomSnackBar(
+            '🔕 Notificaciones desactivadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}',
+            Colors.orange,
+            Icons.notifications_off,
           );
         }
       } else {
-        // Activar notificación
         final success = await _notificationService.addGameNotification(game);
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🔔 Notificaciones activadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+          _showCustomSnackBar(
+            '🔔 Notificaciones activadas para ${game.awayTeam.abbreviation} vs ${game.homeTeam.abbreviation}',
+            Colors.green,
+            Icons.notifications_active,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cambiar notificación'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        _showCustomSnackBar(
+          'Error al cambiar notificación',
+          Colors.red,
+          Icons.error,
         );
       }
     }
   }
 
-  /// Auto-refresh cada 5 minutos
+  void _showCustomSnackBar(String message, Color color, IconData icon) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _setupAutoRefresh() {
     _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (mounted) {
@@ -183,63 +222,115 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: RefreshIndicator(
-              onRefresh: _loadGames,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildContent(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1e3c72),
+              Color(0xFF2a5298),
+              Color(0xFF3d6cb9),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: RefreshIndicator(
+                onRefresh: _loadGames,
+                color: Colors.white,
+                backgroundColor: const Color(0xFF1e3c72),
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    _buildModernAppBar(),
+                    SliverPadding(
+                      padding: const EdgeInsets.all(20),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildContent(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  /// App Bar mejorada con diseño moderno
-  Widget _buildSliverAppBar() {
+  Widget _buildModernAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 160,
       floating: true,
-      pinned: true,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black87,
+      snap: true,
+      pinned: false,
       elevation: 0,
+      backgroundColor: Colors.transparent,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'MLB Hoy',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
         background: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color.fromRGBO(200, 220, 255, 1),
-                Colors.white,
+                Color(0xFF1e3c72),
+                Color(0xFF2a5298),
               ],
             ),
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (!_isLoading) ...[
-                    const SizedBox(height: 8),
-                    _buildQuickStats(),
-                  ],
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.sports_baseball,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '⚾ MLB Hoy',
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Partidos en tiempo real',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (!_isLoading) _buildAnimatedStats(),
                 ],
               ),
             ),
@@ -247,7 +338,7 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         ),
       ),
       actions: [
-        // Indicador de notificaciones activas
+        // Indicador de notificaciones con animación
         if (_notificationGames.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(right: 8),
@@ -255,161 +346,185 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
               alignment: Alignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.notifications_active),
+                  icon: const Icon(Icons.notifications_active, color: Colors.white),
                   onPressed: _showNotificationStats,
-                  color: Colors.orange[700],
                 ),
                 Positioned(
                   right: 8,
                   top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${_notificationGames.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.8, end: 1.2),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            '${_notificationGames.length}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
-        // Botón refresh
-        IconButton(
-          icon: _isLoading 
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh),
-          onPressed: _isLoading ? null : _loadGames,
-          tooltip: 'Actualizar',
+        // Botón refresh con animación
+        AnimatedBuilder(
+          animation: _fadeController,
+          builder: (context, child) {
+            return IconButton(
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.refresh, color: Colors.white),
+              onPressed: _isLoading ? null : _loadGames,
+              tooltip: 'Actualizar',
+            );
+          },
         ),
-        // Menú simplificado para app final
+        // Menú mejorado
         PopupMenuButton<String>(
           onSelected: _handleMenuAction,
-          icon: const Icon(Icons.more_vert),
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'notifications',
-              child: Row(
-                children: [
-                  Icon(Icons.notifications),
-                  SizedBox(width: 8),
-                  Text('Mis Notificaciones'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'test_notification',
-              child: Row(
-                children: [
-                  Icon(Icons.notification_add),
-                  SizedBox(width: 8),
-                  Text('Probar Notificación'),
-                ],
-              ),
-            ),
+            _buildMenuItem('notifications', Icons.notifications, 'Mis Notificaciones'),
+            _buildMenuItem('test_notification', Icons.notification_add, 'Probar Notificación'),
             const PopupMenuDivider(),
-            const PopupMenuItem(
-              value: 'about',
-              child: Row(
-                children: [
-                  Icon(Icons.info),
-                  SizedBox(width: 8),
-                  Text('Acerca de'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'logout',
-              child: Row(
-                children: [
-                  Icon(Icons.logout),
-                  SizedBox(width: 8),
-                  Text('Cerrar Sesión'),
-                ],
-              ),
-            ),
+            _buildMenuItem('about', Icons.info, 'Acerca de'),
+            _buildMenuItem('logout', Icons.logout, 'Cerrar Sesión'),
           ],
         ),
       ],
     );
   }
 
-  /// Estadísticas rápidas en el header
-  Widget _buildQuickStats() {
-    return Row(
-      children: [
-        if (_liveGames.isNotEmpty) ...[
-          _buildStatChip(
-            icon: Icons.circle,
-            label: '${_liveGames.length} en vivo',
-            color: Colors.red,
-          ),
-          const SizedBox(width: 8),
-        ],
-        _buildStatChip(
-          icon: Icons.sports_baseball,
-          label: '${_allGames.length} partidos',
-          color: Colors.blue,
-        ),
-        if (_notificationGames.isNotEmpty) ...[
-          const SizedBox(width: 8),
-          _buildStatChip(
-            icon: Icons.notifications_active,
-            label: '${_notificationGames.length} siguiendo',
-            color: Colors.orange,
+  PopupMenuItem<String> _buildMenuItem(String value, IconData icon, String text) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[700]),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
           ),
         ],
-      ],
+      ),
     );
   }
 
-  Widget _buildStatChip({
+  Widget _buildAnimatedStats() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          if (_liveGames.isNotEmpty) ...[
+            _buildStatCard(
+              icon: Icons.circle,
+              label: '${_liveGames.length} EN VIVO',
+              color: Colors.red,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B6B), Color(0xFFFF5252)],
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          _buildStatCard(
+            icon: Icons.sports_baseball,
+            label: '${_allGames.length} PARTIDOS',
+            color: Colors.blue,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF42A5F5), Color(0xFF2196F3)],
+            ),
+          ),
+          if (_notificationGames.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            _buildStatCard(
+              icon: Icons.notifications_active,
+              label: '${_notificationGames.length} SIGUIENDO',
+              color: Colors.orange,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFB74D), Color(0xFFFF9800)],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
     required IconData icon,
     required String label,
     required Color color,
+    required Gradient gradient,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  /// Contenido principal
   Widget _buildContent() {
     if (_errorMessage != null) {
       return _buildErrorWidget();
@@ -420,163 +535,172 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     if (_allGames.isEmpty) {
       return _buildEmptyWidget();
     }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Juegos en vivo con diseño especial
         if (_liveGames.isNotEmpty) ...[
-          _buildLiveGamesSection(),
-          const SizedBox(height: 24),
+          _buildSectionHeader(
+            '🔴 EN VIVO',
+            '${_liveGames.length} partidos',
+            Colors.red,
+            const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFFF5252)]),
+          ),
+          const SizedBox(height: 16),
+          ..._liveGames.asMap().entries.map((entry) {
+            final index = entry.key;
+            final game = entry.value;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 400 + (index * 100)),
+              builder: (context, value, child) {
+                return Transform.translate(
+                  offset: Offset(0, 50 * (1 - value)),
+                  child: Opacity(
+                    opacity: value,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildGameCard(game, isLive: true),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+          const SizedBox(height: 32),
         ],
+        
         // Todos los juegos
-        _buildAllGamesSection(),
-        // Juegos terminados
-        if (_finishedGames.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          _buildFinishedGamesSection(),
-        ],
-        const SizedBox(height: 40),
-      ],
-    );
-  }
-
-  /// Sección de juegos en vivo con diseño destacado
-  Widget _buildLiveGamesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
+        _buildSectionHeader(
+          '📅 PARTIDOS DE HOY',
+          '${_allGames.length} total',
+          Colors.blue,
+          const LinearGradient(colors: [Color(0xFF42A5F5), Color(0xFF2196F3)]),
+        ),
+        const SizedBox(height: 16),
+        ..._allGames.asMap().entries.map((entry) {
+          final index = entry.key;
+          final game = entry.value;
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 300 + (index * 50)),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, 30 * (1 - value)),
+                child: Opacity(
+                  opacity: value,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildGameCard(game),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'EN VIVO',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.red[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${_liveGames.length}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red[700],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _liveGames.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildGameCard(_liveGames[index], isLive: true),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  /// Sección de todos los juegos
-  Widget _buildAllGamesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Partidos de Hoy',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+              );
+            },
+          );
+        }),
+        
+        // Juegos terminados
+        if (_finishedGames.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          _buildSectionHeader(
+            '✅ RESULTADOS FINALES',
+            '${_finishedGames.length} completados',
+            Colors.green,
+            const LinearGradient(colors: [Color(0xFF66BB6A), Color(0xFF4CAF50)]),
           ),
-        ),
-        const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _allGames.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildGameCard(_allGames[index]),
+          const SizedBox(height: 16),
+          ..._finishedGames.asMap().entries.map((entry) {
+            final index = entry.key;
+            final game = entry.value;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 300 + (index * 50)),
+              builder: (context, value, child) {
+                return Transform.translate(
+                  offset: Offset(0, 30 * (1 - value)),
+                  child: Opacity(
+                    opacity: value,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildGameCard(game, isFinished: true),
+                    ),
+                  ),
+                );
+              },
             );
-          },
-        ),
+          }),
+        ],
+        
+        // Espacio final para el scroll
+        const SizedBox(height: 100),
       ],
     );
   }
 
-  /// Sección de juegos terminados
-  Widget _buildFinishedGamesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green[600], size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Resultados Finales',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
+  Widget _buildSectionHeader(String title, String subtitle, Color color, Gradient gradient) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _finishedGames.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildGameCard(_finishedGames[index], isFinished: true),
-            );
-          },
-        ),
-      ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              title.contains('VIVO') ? Icons.circle :
+              title.contains('HOY') ? Icons.today :
+              Icons.check_circle,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Card de juego mejorada con diseño premium
+
+
   Widget _buildGameCard(MLBGame game, {bool isLive = false, bool isFinished = false}) {
     final hasNotification = _notificationGames.contains(game.id);
 
-    // Determinar colores del marcador
     Color? awayScoreColor;
     Color? homeScoreColor;
     if (game.score != null) {
@@ -594,8 +718,15 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.grey[50]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: hasNotification 
               ? Colors.orange[300]!
@@ -607,15 +738,15 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         boxShadow: [
           BoxShadow(
             color: isLive 
-                ? Color.fromRGBO(255, 0, 0, 0.1)
-                : Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: isLive ? 10 : 6,
-            offset: const Offset(0, 3),
+                ? Colors.red.withOpacity(0.15)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: isLive ? 15 : 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             // Header con estado y tiempo
@@ -629,26 +760,34 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                     Text(
                       game.formattedTime,
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
                     ),
                     if (game.inning != null && game.isLive)
-                      Text(
-                        'Inning ${game.inning}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.red[600],
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Inning ${game.inning}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.red[600],
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            // Equipos y marcador - Layout mejorado
+            const SizedBox(height: 24),
+            
+            // Equipos y marcador mejorado
             Row(
               children: [
                 // Equipo visitante
@@ -660,40 +799,60 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                     isWinner: game.score?.awayWins == true,
                   ),
                 ),
-                // Separador central
+                
+                // Separador central mejorado
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isLive ? Colors.red[50] : Colors.grey[100],
+                          gradient: LinearGradient(
+                            colors: isLive 
+                                ? [Colors.red[400]!, Colors.red[600]!]
+                                : [Colors.blue[400]!, Colors.blue[600]!],
+                          ),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isLive ? Colors.red : Colors.blue).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Text(
                           'VS',
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isLive ? Colors.red[700] : Colors.grey[600],
+                            color: Colors.white,
                           ),
                         ),
                       ),
                       if (game.score != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          '${game.score!.awayScore} - ${game.score!.homeScore}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isLive ? Colors.red[700] : Colors.blue[700],
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isLive ? Colors.red[50] : Colors.blue[50],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${game.score!.awayScore} - ${game.score!.homeScore}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isLive ? Colors.red[700] : Colors.blue[700],
+                            ),
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
+                
                 // Equipo local
                 Expanded(
                   child: _buildTeamSection(
@@ -705,24 +864,34 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            // Footer con venue y controles
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    game.venue.location,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+            
+            const SizedBox(height: 24),
+            
+            // Footer mejorado
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[500]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      game.venue.location,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                _buildNotificationButton(game, hasNotification),
-              ],
+                  const SizedBox(width: 12),
+                  _buildNotificationButton(game, hasNotification),
+                ],
+              ),
             ),
           ],
         ),
@@ -734,13 +903,21 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     return GestureDetector(
       onTap: () => _toggleGameNotification(game),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: hasNotification ? Colors.orange[50] : Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: hasNotification ? Colors.orange[300]! : Colors.grey[300]!,
+          gradient: LinearGradient(
+            colors: hasNotification 
+                ? [Colors.orange[400]!, Colors.orange[600]!]
+                : [Colors.grey[300]!, Colors.grey[400]!],
           ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: (hasNotification ? Colors.orange : Colors.grey).withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -748,15 +925,15 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
             Icon(
               hasNotification ? Icons.notifications_active : Icons.notifications_none,
               size: 18,
-              color: hasNotification ? Colors.orange[700] : Colors.grey[600],
+              color: Colors.white,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               hasNotification ? 'ON' : 'OFF',
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: hasNotification ? Colors.orange[700] : Colors.grey[600],
+                color: Colors.white,
               ),
             ),
           ],
@@ -765,21 +942,28 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     );
   }
 
-  /// Sección de equipo mejorada
   Widget _buildTeamSection(Team team, int? score, Color? scoreColor, {bool isWinner = false}) {
     return Column(
       children: [
+        // Logo del equipo con efectos mejorados
         Container(
-          width: 60,
-          height: 60,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
-            color: _getTeamColor(team.abbreviation),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _getTeamColor(team.abbreviation),
+                _getTeamColor(team.abbreviation).withOpacity(0.8),
+              ],
+            ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: _getTeamColor(team.abbreviation).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: _getTeamColor(team.abbreviation).withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -787,18 +971,20 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
             child: Text(
               team.abbreviation.isNotEmpty ? team.abbreviation : 'TBD',
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        
+        // Nombre del equipo
         Text(
           team.name,
           style: GoogleFonts.poppins(
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: isWinner ? Colors.green[700] : Colors.black87,
           ),
@@ -806,21 +992,34 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        
+        // Marcador con diseño mejorado
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: score != null ? Colors.white : Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: score != null 
+                  ? [Colors.white, Colors.grey[50]!]
+                  : [Colors.grey[100]!, Colors.grey[200]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: scoreColor ?? Colors.grey[300]!,
-              width: isWinner ? 2 : 1,
+              width: isWinner ? 3 : 2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: (scoreColor ?? Colors.grey).withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Text(
             score?.toString() ?? '-',
             style: GoogleFonts.poppins(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: scoreColor ?? Colors.grey[500],
             ),
@@ -832,15 +1031,37 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
   Color _getTeamColor(String abbreviation) {
     switch (abbreviation.toUpperCase()) {
-      case 'NYY': return Colors.blue[900]!;
-      case 'BOS': return Colors.red[700]!;
-      case 'LAD': return Colors.blue[600]!;
-      case 'SF': return Colors.orange[700]!;
-      case 'CHC': return Colors.blue[600]!;
-      case 'NYM': return Colors.blue[700]!;
-      case 'HOU': return Colors.orange[800]!;
-      case 'ATL': return Colors.red[600]!;
-      default: return Colors.blue[400]!;
+      case 'NYY': return const Color(0xFF1F2A44); // Yankees Navy
+      case 'BOS': return const Color(0xFFBD3039); // Red Sox Red
+      case 'LAD': return const Color(0xFF005A9C); // Dodgers Blue
+      case 'SF': return const Color(0xFFFF6600); // Giants Orange
+      case 'CHC': return const Color(0xFF0E3386); // Cubs Blue
+      case 'NYM': return const Color(0xFF002D72); // Mets Blue
+      case 'HOU': return const Color(0xFFEB6E1F); // Astros Orange
+      case 'ATL': return const Color(0xFFCE1141); // Braves Red
+      case 'WSN': return const Color(0xFFAB0003); // Nationals Red
+      case 'PHI': return const Color(0xFFE81828); // Phillies Red
+      case 'MIA': return const Color(0xFF00A3E0); // Marlins Blue
+      case 'TOR': return const Color(0xFF134A8E); // Blue Jays Blue
+      case 'TB': return const Color(0xFF092C5C); // Rays Navy
+      case 'BAL': return const Color(0xFFDF4601); // Orioles Orange
+      case 'CWS': return const Color(0xFF27251F); // White Sox Black
+      case 'CLE': return const Color(0xFFE31937); // Guardians Red
+      case 'DET': return const Color(0xFF0C2340); // Tigers Navy
+      case 'KC': return const Color(0xFF004687); // Royals Blue
+      case 'MIN': return const Color(0xFF002B5C); // Twins Navy
+      case 'OAK': return const Color(0xFF003831); // Athletics Green
+      case 'LAA': return const Color(0xFFBA0021); // Angels Red
+      case 'SEA': return const Color(0xFF0C2C56); // Mariners Navy
+      case 'TEX': return const Color(0xFFC0111F); // Rangers Red
+      case 'MIL': return const Color(0xFF0A2351); // Brewers Navy
+      case 'STL': return const Color(0xFFC41E3A); // Cardinals Red
+      case 'CIN': return const Color(0xFFC6011F); // Reds Red
+      case 'PIT': return const Color(0xFFFDB827); // Pirates Gold
+      case 'ARI': return const Color(0xFFA71930); // Diamondbacks Red
+      case 'COL': return const Color(0xFF33006F); // Rockies Purple
+      case 'SD': return const Color(0xFF2F241D); // Padres Brown
+      default: return const Color(0xFF1976D2); // Default Blue
     }
   }
 
@@ -848,37 +1069,50 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     Color color;
     String text;
     IconData icon;
+    Gradient gradient;
+    
     switch (status) {
       case 'inprogress':
         color = Colors.red;
         text = 'EN VIVO';
         icon = Icons.circle;
+        gradient = const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFFF5252)]);
         break;
       case 'closed':
         color = Colors.green;
         text = 'FINAL';
         icon = Icons.check_circle;
+        gradient = const LinearGradient(colors: [Color(0xFF66BB6A), Color(0xFF4CAF50)]);
         break;
       default:
         color = Colors.blue;
         text = 'PROGRAMADO';
         icon = Icons.schedule;
+        gradient = const LinearGradient(colors: [Color(0xFF42A5F5), Color(0xFF2196F3)]);
     }
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: color,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.white),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
           Text(
             text,
             style: GoogleFonts.poppins(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -890,47 +1124,64 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
   Widget _buildErrorWidget() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(32),
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFEBEE), Color(0xFFFFCDD2)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.red[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(Icons.error_outline, color: Colors.red[600], size: 56),
-          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.error_outline, color: Colors.red[600], size: 64),
+          ),
+          const SizedBox(height: 24),
           Text(
             'No se pudieron cargar los partidos',
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.red[700],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Verifica tu conexión a internet e intenta nuevamente',
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 16,
               color: Colors.red[600],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _loadGames,
             icon: const Icon(Icons.refresh),
-            label: Text('Reintentar', style: GoogleFonts.poppins()),
+            label: Text('Reintentar', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red[600],
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
+              elevation: 8,
             ),
           ),
         ],
@@ -940,16 +1191,20 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
   Widget _buildLoadingWidget() {
     return Container(
-      height: 300,
-      margin: const EdgeInsets.all(16),
+      height: 400,
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0xFFF5F5F5)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -957,25 +1212,45 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(seconds: 2),
+              builder: (context, value, child) {
+                return Transform.rotate(
+                  angle: value * 6.28, // 2π
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1e3c72), Color(0xFF2a5298)],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.sports_baseball,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text(
               'Cargando partidos...',
               style: GoogleFonts.poppins(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               'Obteniendo los últimos datos de MLB',
               style: GoogleFonts.poppins(
                 color: Colors.grey[500],
-                fontSize: 12,
+                fontSize: 14,
               ),
             ),
           ],
@@ -986,56 +1261,68 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
 
   Widget _buildEmptyWidget() {
     return Container(
-      padding: const EdgeInsets.all(32),
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(40),
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Colors.white, Color(0xFFF8F9FA)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.sports_baseball,
-            color: Colors.grey[400],
-            size: 80,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.sports_baseball,
+              color: Colors.blue[600],
+              size: 80,
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Text(
             'No hay partidos hoy',
             style: GoogleFonts.poppins(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.grey[700],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'No se encontraron partidos programados para hoy',
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 16,
               color: Colors.grey[500],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: _loadGames,
             icon: const Icon(Icons.refresh),
-            label: Text('Actualizar', style: GoogleFonts.poppins()),
+            label: Text('Actualizar', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue[600],
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
+              elevation: 8,
             ),
           ),
         ],
@@ -1061,216 +1348,298 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
     }
   }
 
-  /// Test de notificación manual
   Future<void> _testNotification() async {
     try {
       await PushNotificationService.showTestNotification();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Notificación de prueba enviada'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        _showCustomSnackBar(
+          'Notificación de prueba enviada',
+          Colors.green,
+          Icons.check_circle,
         );
       }
       debugPrint('🧪 Notificación de prueba enviada');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Error al enviar notificación'),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        _showCustomSnackBar(
+          'Error al enviar notificación',
+          Colors.red,
+          Icons.error,
         );
       }
       debugPrint('❌ Error enviando notificación: $e');
     }
   }
 
-  /// Mostrar estadísticas de notificaciones
   Future<void> _showNotificationStats() async {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.notifications_active, color: Colors.orange[700]),
-            const SizedBox(width: 8),
-            Text(
-              'Mis Notificaciones',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Color(0xFFF8F9FA)],
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_notificationGames.isEmpty) ...[
-              const Icon(Icons.notifications_off, size: 48, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                'No tienes notificaciones activas',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Toca el botón de notificación en cualquier partido para recibir alertas.',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-              ),
-            ] else ...[
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFB74D), Color(0xFFFF9800)],
+                  ),
+                  shape: BoxShape.circle,
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.notifications_active, color: Colors.orange[700]),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_notificationGames.length} partidos siguiendo',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[700],
-                          ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Mis Notificaciones',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (_notificationGames.isEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.notifications_off, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No tienes notificaciones activas',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Toca el botón de notificación en cualquier partido para recibir alertas.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Recibirás notificaciones cuando estos partidos empiecen y cuando cambien los marcadores.',
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.notifications_active, color: Colors.orange[700], size: 24),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_notificationGames.length} partidos siguiendo',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Recibirás notificaciones cuando estos partidos empiecen y cuando cambien los marcadores.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.orange[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'Cerrar',
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.orange[600],
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                  if (_notificationGames.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _testNotification();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange[600],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Probar Notificación',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cerrar',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
           ),
-          if (_notificationGames.isNotEmpty)
-            FilledButton(
-              onPressed: _testNotification,
-              child: Text(
-                'Probar Notificación',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
+        ),
       ),
     );
     debugPrint('📊 Estadísticas de notificaciones mostradas');
   }
 
-  /// Mostrar información de la app
   void _showAboutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.sports_baseball, color: Colors.blue[700]),
-            const SizedBox(width: 8),
-            Text(
-              'EpicSports MLB',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Color(0xFFF8F9FA)],
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Versión 1.0.0',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tu app definitiva para seguir los partidos de MLB en tiempo real.',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Características:',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue[700],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• Marcadores en tiempo real\n• Notificaciones personalizables\n• Información completa de partidos\n• Interfaz moderna y fácil de usar',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.blue[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cerrar',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1e3c72), Color(0xFF2a5298)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.sports_baseball,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'EpicSports MLB',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Versión 1.0.0',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Tu app definitiva para seguir los partidos de MLB en tiempo real.',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Características:',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '• Marcadores en tiempo real\n• Notificaciones personalizables\n• Información completa de partidos\n• Interfaz moderna y fácil de usar',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.blue[600],
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cerrar',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1278,43 +1647,98 @@ class _SimpleDashboardScreenState extends State<SimpleDashboardScreen> {
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red[600]),
-            const SizedBox(width: 8),
-            Text(
-              'Cerrar Sesión',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Color(0xFFF8F9FA)],
             ),
-          ],
-        ),
-        content: Text(
-          '¿Estás seguro de que quieres cerrar sesión?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
+            borderRadius: BorderRadius.circular(20),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red[600]),
-            child: Text(
-              'Cerrar Sesión',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B6B), Color(0xFFFF5252)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.logout,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Cerrar Sesión',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '¿Estás seguro de que quieres cerrar sesión?',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        'Cancelar',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cerrar Sesión',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+    
     if (confirmed == true) {
-      // Limpiar notificaciones y parar monitor
       debugPrint('🔔 Limpiando notificaciones al cerrar sesión');
       await _notificationService.clearAllNotifications();
       GameMonitorService.instance.stopMonitoring();
