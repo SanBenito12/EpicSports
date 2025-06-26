@@ -1,9 +1,9 @@
-// lib/widgets/game_widgets.dart
+// lib/widgets/game_widgets.dart - CORREGIDO para usar el modelo MLBGame correcto
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../models/simple_mlb_models.dart'; // ✅ IMPORT CORREGIDO
+import '../models/simple_mlb_models.dart';
+import '../services/team_logo_service.dart';
 
-/// Widget para mostrar todos los partidos del día
+/// Widget principal para lista de partidos
 class TodayMatchesWidget extends StatelessWidget {
   final List<MLBGame> games;
   final Function(MLBGame) onGameTap;
@@ -21,68 +21,43 @@ class TodayMatchesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (games.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Partidos del Día (${games.length})',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text(
+            'No hay juegos programados para hoy',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ),
-        const SizedBox(height: 12),
-        ...games.map((game) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _GameCard(
-            game: game,
-            onTap: () => onGameTap(game),
-            onNotificationToggle: () => onNotificationToggle(game),
-            isNotificationActive: notificationGames.contains(game.id),
-          ),
-        )),
-      ],
-    );
-  }
+      );
+    }
 
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.sports_baseball, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          Text(
-            'No hay partidos programados',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: games.length,
+      itemBuilder: (context, index) {
+        final game = games[index];
+        final isNotificationEnabled = notificationGames.contains(game.id);
+        
+        return GameCard(
+          game: game,
+          isNotificationEnabled: isNotificationEnabled,
+          onTap: () => onGameTap(game),
+          onNotificationToggle: () => onNotificationToggle(game),
+        );
+      },
     );
   }
 }
 
-/// Widget para mostrar solo partidos en vivo
+/// Widget para partidos en vivo
 class LiveScoresWidget extends StatelessWidget {
   final List<MLBGame> liveGames;
-  final Function(MLBGame) onGameTap;
 
   const LiveScoresWidget({
     super.key,
     required this.liveGames,
-    required this.onGameTap,
   });
 
   @override
@@ -94,50 +69,43 @@ class LiveScoresWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '🔴 EN VIVO',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
             ),
-            const SizedBox(width: 8),
-            Text(
-              'En Vivo (${liveGames.length})',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...liveGames.map((game) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _LiveGameCard(
-            game: game,
-            onTap: () => onGameTap(game),
           ),
-        )),
-        const SizedBox(height: 20),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: liveGames.length,
+          itemBuilder: (context, index) {
+            final game = liveGames[index];
+            return GameCard(
+              game: game,
+              isLive: true,
+              onTap: () {}, // Acción para juegos en vivo
+              onNotificationToggle: () {},
+            );
+          },
+        ),
       ],
     );
   }
 }
 
-/// Widget para mostrar partidos terminados
+/// Widget para partidos terminados
 class FinishedScoresWidget extends StatelessWidget {
   final List<MLBGame> finishedGames;
-  final Function(MLBGame) onGameTap;
 
   const FinishedScoresWidget({
     super.key,
     required this.finishedGames,
-    required this.onGameTap,
   });
 
   @override
@@ -149,523 +117,85 @@ class FinishedScoresWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Resultados Finales (${finishedGames.length})',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[700],
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '✅ FINALIZADOS',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        ...finishedGames.map((game) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _FinishedGameCard(
-            game: game,
-            onTap: () => onGameTap(game),
-          ),
-        )),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: finishedGames.length,
+          itemBuilder: (context, index) {
+            final game = finishedGames[index];
+            return GameCard(
+              game: game,
+              isFinished: true,
+              onTap: () {}, // Acción para juegos terminados
+              onNotificationToggle: () {},
+            );
+          },
+        ),
       ],
     );
   }
 }
 
-/// Card base para cualquier partido - FIXED LAYOUT
-class _GameCard extends StatelessWidget {
+/// Tarjeta individual de juego con logos SVG
+class GameCard extends StatelessWidget {
   final MLBGame game;
+  final bool isNotificationEnabled;
+  final bool isLive;
+  final bool isFinished;
   final VoidCallback onTap;
   final VoidCallback onNotificationToggle;
-  final bool isNotificationActive;
 
-  const _GameCard({
+  const GameCard({
+    super.key,
     required this.game,
+    this.isNotificationEnabled = false,
+    this.isLive = false,
+    this.isFinished = false,
     required this.onTap,
     required this.onNotificationToggle,
-    required this.isNotificationActive,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatusBadge(),
-                Text(
-                  game.formattedTime,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Teams and score - FIXED
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  // Away team
-                  Expanded(
-                    child: _buildTeam(game.awayTeam, game.score?.awayScore),
-                  ),
-                  
-                  // VS
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'VS',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  // Home team
-                  Expanded(
-                    child: _buildTeam(game.homeTeam, game.score?.homeScore),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Footer - FIXED
-            Row(
-              children: [
-                // Notification button
-                GestureDetector(
-                  onTap: onNotificationToggle,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isNotificationActive ? Colors.orange[100] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isNotificationActive ? Colors.orange : Colors.grey[300]!,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isNotificationActive ? Icons.notifications_active : Icons.notifications_none,
-                          size: 14,
-                          color: isNotificationActive ? Colors.orange : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isNotificationActive ? 'ON' : 'OFF',
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: isNotificationActive ? Colors.orange : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                // Location
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          game.venue.location,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: Colors.grey[600],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    Color color;
-    String text;
-    
-    switch (game.status) {
-      case 'inprogress':
-        color = Colors.red;
-        text = 'EN VIVO';
-        break;
-      case 'closed':
-        color = Colors.grey;
-        text = 'FINAL';
-        break;
-      default:
-        color = Colors.blue;
-        text = 'PROGRAMADO';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.poppins(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeam(Team team, int? score) {
-    final abbreviation = _getSafeAbbreviation(team);
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Team logo - Simplificado sin TeamLogoService
-        _buildSimpleTeamLogo(abbreviation),
-        const SizedBox(height: 8),
-        
-        // Team name
-        Text(
-          team.name.isNotEmpty ? team.name : abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        
-        // Score
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: score != null ? Colors.blue[50] : Colors.grey[100],
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
+            gradient: _getCardGradient(),
           ),
-          child: Text(
-            score?.toString() ?? '-',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: score != null ? Colors.blue[700] : Colors.grey[500],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _getSafeAbbreviation(Team team) {
-    if (team.abbreviation.isNotEmpty) {
-      return team.abbreviation;
-    }
-    if (team.name.isNotEmpty) {
-      return team.name.substring(0, 3).toUpperCase();
-    }
-    return 'TBD';
-  }
-
-  Widget _buildSimpleTeamLogo(String abbreviation) {
-    // Logo simplificado sin dependencias externas
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: _getTeamColor(abbreviation),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getTeamColor(String abbreviation) {
-    // Colores básicos por equipo
-    switch (abbreviation.toUpperCase()) {
-      case 'NYY': return Colors.blue[900]!;
-      case 'BOS': return Colors.red[700]!;
-      case 'LAD': return Colors.blue[600]!;
-      case 'SF': return Colors.orange[700]!;
-      case 'CHC': return Colors.blue[600]!;
-      case 'NYM': return Colors.blue[700]!;
-      default: return Colors.blue[400]!;
-    }
-  }
-}
-
-/// Card especializada para partidos en vivo - FIXED
-class _LiveGameCard extends StatelessWidget {
-  final MLBGame game;
-  final VoidCallback onTap;
-
-  const _LiveGameCard({required this.game, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.red[50]!, Colors.red[100]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red[200]!),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Live indicator
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'EN VIVO',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                const Spacer(),
-                if (game.inning != null)
-                  Text(
-                    'Inning ${game.inning}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.red[700],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Score display with logos - FIXED
-            IntrinsicHeight(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: _buildLiveTeam(game.awayTeam, game.score?.awayScore),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '-',
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red[600],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildLiveTeam(game.homeTeam, game.score?.homeScore),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLiveTeam(Team team, int? score) {
-    final abbreviation = _getSafeAbbreviation(team);
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildSimpleTeamLogo(abbreviation),
-        const SizedBox(height: 8),
-        Text(
-          abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.red[700],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          score?.toString() ?? '0',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.red[800],
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _getSafeAbbreviation(Team team) {
-    if (team.abbreviation.isNotEmpty) {
-      return team.abbreviation;
-    }
-    if (team.name.isNotEmpty) {
-      return team.name.substring(0, 3).toUpperCase();
-    }
-    return 'TBD';
-  }
-
-  Widget _buildSimpleTeamLogo(String abbreviation) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.red[400],
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Card especializada para partidos terminados - FIXED
-class _FinishedGameCard extends StatelessWidget {
-  final MLBGame game;
-  final VoidCallback onTap;
-
-  const _FinishedGameCard({required this.game, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final homeWon = game.score != null && 
-                   game.score!.homeScore > game.score!.awayScore;
-    final awayWon = game.score != null && 
-                   game.score!.awayScore > game.score!.homeScore;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
+          child: Column(
             children: [
-              // Away team
-              Expanded(
-                child: _buildFinishedTeam(
-                  game.awayTeam, 
-                  game.score?.awayScore, 
-                  isWinner: awayWon,
-                ),
-              ),
+              // Estado del juego
+              _buildGameStatus(),
+              const SizedBox(height: 12),
               
-              // Final indicator
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'FINAL',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ),
-              ),
+              // Equipos con logos SVG
+              _buildTeamsSection(),
+              const SizedBox(height: 12),
               
-              // Home team
-              Expanded(
-                child: _buildFinishedTeam(
-                  game.homeTeam, 
-                  game.score?.homeScore, 
-                  isWinner: homeWon,
-                ),
-              ),
+              // Información adicional
+              _buildGameInfo(),
+              
+              // Botón de notificación (solo para juegos programados)
+              if (!isLive && !isFinished) _buildNotificationButton(),
             ],
           ),
         ),
@@ -673,69 +203,233 @@ class _FinishedGameCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFinishedTeam(Team team, int? score, {bool isWinner = false}) {
-    final abbreviation = _getSafeAbbreviation(team);
+  /// Gradiente según el estado del juego
+  LinearGradient? _getCardGradient() {
+    if (isLive) {
+      return const LinearGradient(
+        colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    } else if (isFinished) {
+      return const LinearGradient(
+        colors: [Color(0xFF4ECDC4), Color(0xFF6FDDDD)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    }
+    return null; // Sin gradiente para juegos programados
+  }
+
+  /// Estado del juego
+  Widget _buildGameStatus() {
+    String status;
+    Color statusColor;
     
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    if (isLive || game.isLive) {
+      status = 'EN VIVO';
+      statusColor = Colors.red;
+    } else if (isFinished || game.isCompleted) {
+      status = 'FINAL';
+      statusColor = Colors.green;
+    } else {
+      status = 'PROGRAMADO';
+      statusColor = Colors.blue;
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildSimpleTeamLogo(abbreviation),
-        const SizedBox(height: 6),
-        Text(
-          abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: isWinner ? FontWeight.bold : FontWeight.w500,
-            color: isWinner ? Colors.green[700] : Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isWinner ? Colors.green[100] : Colors.grey[200],
-            borderRadius: BorderRadius.circular(6),
+            color: statusColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: statusColor),
           ),
           child: Text(
-            score?.toString() ?? '0',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
+            status,
+            style: TextStyle(
+              color: statusColor,
               fontWeight: FontWeight.bold,
-              color: isWinner ? Colors.green[700] : Colors.grey[700],
+              fontSize: 12,
             ),
+          ),
+        ),
+        Text(
+          game.venue.name,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
           ),
         ),
       ],
     );
   }
 
-  String _getSafeAbbreviation(Team team) {
-    if (team.abbreviation.isNotEmpty) {
-      return team.abbreviation;
-    }
-    if (team.name.isNotEmpty) {
-      return team.name.substring(0, 3).toUpperCase();
-    }
-    return 'TBD';
-  }
-
-  Widget _buildSimpleTeamLogo(String abbreviation) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.grey[400],
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          abbreviation,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+  /// Sección de equipos con logos SVG
+  Widget _buildTeamsSection() {
+    return Row(
+      children: [
+        // Equipo visitante
+        Expanded(
+          child: _buildTeam(
+            teamCode: game.awayTeam.abbreviation,
+            teamName: game.awayTeam.name,
+            score: game.score?.awayScore ?? 0,
+            isAway: true,
           ),
         ),
+        
+        // VS o marcador
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              if (isLive || isFinished || game.score != null)
+                Text(
+                  '${game.score?.awayScore ?? 0} - ${game.score?.homeScore ?? 0}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                const Text(
+                  'VS',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              if (isLive && game.inning?.isNotEmpty == true)
+                Text(
+                  game.inning!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        
+        // Equipo local
+        Expanded(
+          child: _buildTeam(
+            teamCode: game.homeTeam.abbreviation,
+            teamName: game.homeTeam.name,
+            score: game.score?.homeScore ?? 0,
+            isAway: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Widget individual de equipo con logo SVG
+  Widget _buildTeam({
+    required String teamCode,
+    required String teamName,
+    required int score,
+    required bool isAway,
+  }) {
+    return Column(
+      children: [
+        // Logo SVG del equipo
+        TeamLogoService.getTeamLogo(teamCode, size: 50),
+        const SizedBox(height: 8),
+        
+        // Código del equipo
+        Text(
+          teamCode,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        
+        // Nombre del equipo (abreviado)
+        Text(
+          teamName.length > 12 ? '${teamName.substring(0, 12)}...' : teamName,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  /// Información adicional del juego
+  Widget _buildGameInfo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.access_time, size: 16, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text(
+              game.formattedTime,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        if (game.venue.name.length > 20)
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                '${game.venue.name.substring(0, 20)}...',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// Botón de notificación
+  Widget _buildNotificationButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          InkWell(
+            onTap: onNotificationToggle,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isNotificationEnabled ? Colors.blue : Colors.grey[300],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNotificationEnabled ? Icons.notifications_active : Icons.notifications_off,
+                    size: 16,
+                    color: isNotificationEnabled ? Colors.white : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isNotificationEnabled ? 'Notificar' : 'Silenciar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isNotificationEnabled ? Colors.white : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
