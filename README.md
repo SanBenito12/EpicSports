@@ -1,16 +1,46 @@
-# myapp
+# EpicSports
 
-A new Flutter project.
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white) ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) ![Push Notifications](https://img.shields.io/badge/Push%20Notifications-blueviolet?style=for-the-badge) ![Live Markers](https://img.shields.io/badge/Live%20Markers-critical?style=for-the-badge) ![Sport Radar API](https://img.shields.io/badge/Sport%20Radar%20API-success?style=for-the-badge)
 
-## Getting Started
+APP QUE MUESTRA ESTADISTICAS DEL PARTIDOS DEL DIA USANDO LA API DE SPORT RADAR
 
-This project is a starting point for a Flutter application.
+## Introducción
 
-A few resources to get you started if this is your first Flutter project:
+*Contenido pendiente...*
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Características Clave
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+*Contenido pendiente...*
+
+## Tecnologías Usadas
+
+*Contenido pendiente...*
+
+## Instalación
+
+*Contenido pendiente...*
+
+## Uso
+
+*Contenido pendiente...*
+
+## Notificaciones Push
+
+*Contenido pendiente...*
+
+## Marcadores en Vivo
+
+*Contenido pendiente...*
+
+## Juegos del Día
+
+*Contenido pendiente...*
+
+## Licencia
+
+*Contenido pendiente...*
+
+## Contribuciones
+
+*Contenido pendiente...*
+
