@@ -1,49 +1,45 @@
 # EpicSports
 
-![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white) ![Android](https://img.shields.io/badge/Android-%233DDC84.svg?style=for-the-badge&logo=android&logoColor=white) ![Push Notifications](https://img.shields.io/badge/Push%20Notifications-orange)
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white) ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) ![Push Notifications](https://img.shields.io/badge/Push%20Notifications-informational?style=flat-square&logo=appveyor) ![Realtime Markers](https://img.shields.io/badge/Realtime%20Markers-informational?style=flat-square&logo=clockify) ![Sport Radar API](https://img.shields.io/badge/Sport%20Radar%20API-informational?style=flat-square&logo=sportradar)
 
-APP HECHA EN FLUTTER PARA ANDROID QUE DA ESTADISTICAS DE PARTIDOS DE MLB USANDO LA API DE SPORT RADAR
+APP DEPORTIVA HECHA EN FLUTTER QUE MUESTRA PARTIDOS CON MARCADORES EN VIVO DE MLB USANDO API DE SPORT RADAR
 
 
 ## Introducción
 
-EpicSports es una aplicación móvil para Android desarrollada con Flutter, diseñada para ofrecer a los fanáticos del béisbol una experiencia inmersiva y completa siguiendo las estadísticas y resultados de la Major League Baseball (MLB). En un mundo donde la información deportiva es abundante pero a menudo dispersa, EpicSports centraliza los datos más relevantes en una interfaz intuitiva y fácil de usar. 
+EpicSports es una aplicación móvil para Android desarrollada en Flutter, diseñada para los fanáticos del béisbol que desean mantenerse al día con la Major League Baseball (MLB). La aplicación resuelve el problema de acceder a información deportiva en tiempo real de manera rápida y eficiente, ofreciendo marcadores en vivo, calendarios de partidos y notificaciones personalizadas directamente en sus dispositivos móviles.
 
-Esta aplicación resuelve el problema de tener que buscar en múltiples fuentes para obtener actualizaciones de partidos, marcadores en vivo y estadísticas detalladas. EpicSports está dirigida a aficionados del béisbol de todos los niveles, desde el seguidor casual hasta el analista más dedicado. Ofrece desde notificaciones push personalizables para no perderse ni un solo momento clave de los juegos, hasta la posibilidad de consultar los juegos del día y acceder a marcadores actualizados al instante.  
+El principal objetivo de EpicSports es brindar una experiencia de usuario inmersiva y actualizada para los seguidores de la MLB.  En un mundo donde la información deportiva es abundante pero a menudo dispersa y desorganizada, EpicSports centraliza los datos más relevantes, utilizando la API de Sport Radar para asegurar la precisión y la puntualidad de la información mostrada.
 
-En resumen, EpicSports es la herramienta definitiva para cualquier fanático de la MLB que desee estar al tanto de todo lo que sucede en el mundo del béisbol, de una manera rápida, eficiente y personalizada.
+EpicSports es ideal para:
+
+*   **Aficionados casuales:** Que buscan una manera sencilla de seguir los resultados de sus equipos favoritos.
+*   **Fanáticos acérrimos:** Que desean acceso instantáneo a estadísticas detalladas y actualizaciones en vivo durante los partidos.
+*   **Personas ocupadas:** Que necesitan recibir notificaciones push sobre momentos clave de los partidos sin tener que estar constantemente revisando la aplicación.
+
+En resumen, EpicSports se esfuerza por ser la aplicación de referencia para los aficionados de la MLB, ofreciendo una combinación de información en tiempo real, una interfaz de usuario intuitiva y notificaciones personalizadas para mejorar la experiencia general de seguimiento del béisbol.
 
 ## Características
 
-EpicSports ofrece una variedad de características diseñadas para mantener a los fanáticos de la MLB al tanto de cada juego y estadística. A continuación, se detallan las características clave:
+EpicSports ofrece una experiencia completa para los fanáticos del béisbol, centrada en proporcionar información en vivo y funcionalidades convenientes. A continuación, se detallan las características clave:
 
-*   **Notificaciones Push:**
-    *   Recibe notificaciones instantáneas directamente en tu dispositivo Android sobre momentos importantes de los juegos, como el inicio del juego, actualizaciones de puntaje, finales de entrada y cualquier evento crucial que cambie el curso del juego. Estas notificaciones son altamente configurables, lo que te permite elegir qué tipos de alertas deseas recibir y para qué equipos.
-    *   Personaliza tus notificaciones según tus equipos favoritos, para que solo recibas actualizaciones sobre los juegos que más te interesan.
-    *   Asegúrate de no perderte nunca un momento crucial, incluso cuando no puedas ver el juego en vivo.
+*   **Notificaciones Push Personalizadas:**
+    *   Recibe alertas instantáneas sobre momentos cruciales de los partidos de la MLB, como el inicio y fin de los juegos, cambios de marcador significativos (home runs, carreras anotadas), y otras actualizaciones relevantes. Estas notificaciones son totalmente personalizables; los usuarios pueden elegir recibir alertas solo para sus equipos favoritos o para tipos específicos de eventos dentro de un juego.
+    *   La implementación de notificaciones push se basa en Firebase Cloud Messaging (FCM), asegurando una entrega confiable y eficiente de las alertas.
 
-*   **Marcadores Actualizados en Tiempo Real:**
-    *   Sigue los marcadores de todos los juegos de la MLB en tiempo real. Los marcadores se actualizan instantáneamente a medida que ocurren los eventos en el juego, proporcionando información precisa y actualizada.
-    *   Accede a información detallada del juego, incluyendo carreras, hits, errores (RHE), conteo de outs y estado de las bases.
-    *   Consulta las estadísticas del equipo y del jugador directamente desde la pantalla del marcador para obtener una comprensión más profunda del juego.
+*   **Marcadores en Tiempo Real:**
+    *   Sigue la acción en vivo con actualizaciones de marcadores en tiempo real para todos los partidos de la MLB. La aplicación muestra información detallada, incluyendo la alineación del equipo, el conteo de bolas y strikes, el estado de las bases, y las estadísticas clave de los jugadores en tiempo real.
+    *   Los marcadores se actualizan automáticamente a través de la API de Sport Radar, lo que garantiza que los usuarios siempre tengan la información más precisa y actualizada disponible.
 
-*   **Juegos del Día:**
-    *   Obtén una lista completa de todos los juegos de la MLB programados para el día actual.
-    *   Visualiza fácilmente los horarios de los juegos, los enfrentamientos de los lanzadores y los lugares.
-    *   Establece recordatorios para los juegos que quieras ver, asegurándote de no perderte el inicio.
-    *   Accede rápidamente a los marcadores en vivo de los juegos en curso desde la lista de Juegos del Día.
+*   **Calendario de Partidos del Día:**
+    *   Consulta fácilmente el calendario completo de partidos del día, con horarios de inicio y detalles de transmisión (si están disponibles). La aplicación organiza los partidos por hora, permitiendo a los usuarios planificar su visualización de juegos de manera eficiente.
+    *   La vista de calendario es interactiva, permitiendo a los usuarios tocar cualquier partido para ver detalles adicionales, incluyendo enfrentamientos directos, récords de temporada, y estadísticas relevantes del equipo.
 
-## Tecnologías
+*   **Integración con Sport Radar API:**
+    *   La aplicación se integra perfectamente con la API de Sport Radar para obtener datos precisos y actualizados sobre los partidos de la MLB. Esto asegura que la información mostrada a los usuarios sea confiable y provenga de una fuente de datos oficial.
 
-EpicSports está construido utilizando las siguientes tecnologías clave:
-
-*   **Flutter:** El framework de desarrollo de UI de Google. Utilizamos Flutter para construir una aplicación para Android de alto rendimiento y visualmente atractiva desde una única base de código. Flutter nos permite implementar rápidamente nuevas funcionalidades y mantener una experiencia de usuario consistente en diferentes dispositivos Android.
-
-    *   **¿Por qué Flutter?:** Optamos por Flutter debido a su capacidad para crear interfaces de usuario nativas con un desarrollo rápido, una amplia gama de widgets personalizables y un excelente rendimiento. Su arquitectura basada en widgets y el soporte para hot-reload aceleraron significativamente el ciclo de desarrollo.
-
-*   **API de SportRadar:** Esta API proporciona datos deportivos en tiempo real y estadísticos de MLB. La usamos para obtener los marcadores, los juegos del día y otras estadísticas del juego que mostramos en la aplicación. La API de SportRadar es una fuente confiable y completa de datos deportivos, lo que garantiza que EpicSports proporciona información precisa y actualizada.
-
-*   **Notificaciones Push (Firebase Cloud Messaging - FCM):** FCM se utiliza para enviar notificaciones push a los usuarios, manteniéndolos actualizados sobre los marcadores de los partidos en vivo y otros eventos importantes. FCM permite la entrega confiable y eficiente de notificaciones, lo que mejora la participación del usuario y proporciona actualizaciones oportunas.
+*   **Interfaz de Usuario Intuitiva:**
+    *   Diseñada con Flutter, la aplicación ofrece una interfaz de usuario fluida y responsiva que es fácil de navegar tanto en teléfonos como en tabletas. La interfaz está optimizada para una experiencia de usuario agradable, con elementos visuales claros y una disposición lógica de la información.
 
 ## Instalación
 
@@ -53,343 +49,378 @@ Para instalar y ejecutar EpicSports en tu entorno local, sigue estos pasos:
 
 Antes de comenzar, asegúrate de tener instalados los siguientes requisitos:
 
-*   **Flutter SDK:** Asegúrate de tener el SDK de Flutter instalado y configurado correctamente. Puedes descargarlo desde [https://flutter.dev/docs/get-started/install](https://flutter.dev/docs/get-started/install) y seguir las instrucciones de instalación para tu sistema operativo.
-*   **Android Studio o Visual Studio Code:** Necesitarás un IDE para desarrollar aplicaciones Flutter. Recomendamos Android Studio o Visual Studio Code con el plugin de Flutter.
-*   **Android SDK:** Si usas Android Studio, el Android SDK debería instalarse automáticamente. De lo contrario, asegúrate de tenerlo instalado y configurado.
-*   **Git:** Git es necesario para clonar el repositorio. Si no lo tienes instalado, puedes descargarlo desde [https://git-scm.com/](https://git-scm.com/).
+*   **Flutter SDK:** Asegúrate de tener Flutter instalado y configurado en tu sistema. Puedes descargar la última versión desde el [sitio web oficial de Flutter](https://flutter.dev/docs/get-started/install). Sigue las instrucciones específicas para tu sistema operativo.
+*   **Android SDK:** Necesitarás el Android SDK para emular o ejecutar la aplicación en un dispositivo Android. Flutter usa el Android SDK para compilar la aplicación para Android. Asegúrate de que la variable de entorno `ANDROID_HOME` esté configurada correctamente.
+*   **IDE (Opcional):** Android Studio o VS Code con el plugin de Flutter son recomendables para el desarrollo. Esto te proporcionará herramientas de depuración y autocompletado.
+*   **Git:** Necesitas Git para clonar el repositorio del proyecto.
 
-### Clonar el Repositorio
+### Pasos de Instalación
 
-Clona el repositorio de EpicSports desde GitHub:
+1.  **Clonar el Repositorio**
 
-```bash
-git clone [URL_DEL_REPOSITORIO]
-cd EpicSports
-```
+    Abre tu terminal y navega hasta el directorio donde deseas clonar el proyecto EpicSports. Ejecuta el siguiente comando:
 
-Reemplaza `[URL_DEL_REPOSITORIO]` con la URL real del repositorio de EpicSports.
-
-### Instalar Dependencias
-
-Una vez que hayas clonado el repositorio, navega hasta el directorio del proyecto y ejecuta el siguiente comando para instalar las dependencias de Flutter:
-
-```bash
-flutter pub get
-```
-
-Este comando descargará todas las dependencias necesarias especificadas en el archivo `pubspec.yaml`.
-
-### Configuración de la API de Sport Radar
-
-EpicSports utiliza la API de Sport Radar para obtener las estadísticas de los partidos de MLB. Deberás obtener una clave de API de Sport Radar y configurarla en la aplicación.
-
-1.  **Obtener una clave de API:** Visita el sitio web de Sport Radar Developer ([https://developer.sportradar.com/](https://developer.sportradar.com/)) y regístrate para obtener una clave de API.
-2.  **Configurar la clave de API:** Crea un archivo `.env` en la raíz del proyecto. Agrega la siguiente línea al archivo, reemplazando `YOUR_SPORT_RADAR_API_KEY` con tu clave de API:
-
-    ```
-    SPORT_RADAR_API_KEY=YOUR_SPORT_RADAR_API_KEY
+    ```bash
+    git clone [URL_DEL_REPOSITORIO]
+    cd EpicSports
     ```
 
-    Asegúrate de que este archivo `.env` esté incluido en tu archivo `.gitignore` para evitar que tu clave de API se suba a un repositorio público.
+    Reemplaza `[URL_DEL_REPOSITORIO]` con la URL real del repositorio de EpicSports.
 
-3.  **Cargar la clave de API en la aplicación:** Necesitarás cargar esta clave de API desde el archivo `.env` en tu código Flutter. Puedes usar un paquete como `flutter_dotenv` para hacer esto. Agrega la dependencia a tu `pubspec.yaml`:
+2.  **Instalar Dependencias de Flutter**
 
-    ```yaml
-    dependencies:
-      flutter_dotenv: ^5.0.2
+    Una vez que hayas clonado el repositorio, navega hasta el directorio del proyecto (si no lo has hecho ya) y ejecuta el siguiente comando para instalar todas las dependencias necesarias:
+
+    ```bash
+    flutter pub get
     ```
 
-    Luego, ejecuta `flutter pub get` para instalar la dependencia.
+    Este comando descargará todas las dependencias especificadas en el archivo `pubspec.yaml`.
 
-    En tu archivo `main.dart` (o donde sea apropiado), carga las variables de entorno:
+3.  **Configuración de la API de Sport Radar**
 
-    ```dart
-    import 'package:flutter_dotenv/flutter_dotenv.dart';
+    Para obtener los marcadores en vivo de MLB, EpicSports utiliza la API de Sport Radar. Necesitarás obtener una clave de API y configurarla en la aplicación.
 
-    Future<void> main() async {
-      await dotenv.load(fileName: ".env");
-      runApp(MyApp());
-    }
-    ```
+    *   Regístrate en [Sport Radar Developer Portal](https://developer.sportradar.com/).
+    *   Obtén una clave de API para el servicio de MLB.
+    *   Abre el archivo `lib/config.dart` (o similar, dependiendo de la estructura del proyecto) y actualiza la variable `apiKey` con tu clave de API:
 
-    Finalmente, accede a la clave de API en tu código:
-
-    ```dart
-    final apiKey = dotenv.env['SPORT_RADAR_API_KEY'];
-    ```
-
-### Ejecutar la Aplicación
-
-Con todos los requisitos previos instalados y las dependencias configuradas, puedes ejecutar la aplicación en un emulador o en un dispositivo físico.
-
-```bash
-flutter run
-```
-
-Este comando compilará y ejecutará la aplicación en el dispositivo conectado o en el emulador. Asegúrate de tener un emulador configurado o un dispositivo Android conectado y reconocido por tu sistema.
-
-Si tienes problemas, consulta la documentación de Flutter para obtener más información sobre la configuración y el uso: [https://flutter.dev/docs](https://flutter.dev/docs).
-
-## Uso
-
-## Uso
-
-Para utilizar la aplicación EpicSports, siga estos pasos:
-
-1.  **Instalación:** Asegúrese de haber seguido las instrucciones de la sección [Instalación](#instalación) para configurar correctamente el entorno de desarrollo de Flutter y tener la aplicación instalada en su dispositivo Android (emulador o físico).
-
-2.  **Ejecución de la Aplicación:**
-
-    *   Abra su emulador de Android o conecte su dispositivo Android a su computadora.
-    *   En la terminal, navegue hasta el directorio raíz del proyecto EpicSports.
-    *   Ejecute la aplicación utilizando el siguiente comando:
-
-        ```bash
-        flutter run
+        ```dart
+        const String apiKey = 'YOUR_SPORT_RADAR_API_KEY';
         ```
 
-    *   Este comando compilará y ejecutará la aplicación en el dispositivo o emulador seleccionado.
+    **Nota:** Es altamente recomendable no subir la API key directamente al repositorio. Para mayor seguridad, puedes usar variables de entorno o un archivo `.env`.
 
-3.  **Navegación en la Aplicación:**
+4.  **Ejecutar la Aplicación**
 
-    *   Una vez que la aplicación se haya iniciado, verá la pantalla principal.
-    *   **Marcadores Actualizados:** La pantalla principal mostrará los marcadores actualizados de los juegos de la MLB en curso.  Estos marcadores se actualizan automáticamente en tiempo real, proporcionando la información más reciente.
-    *   **Juegos del Día:** Podrá ver una lista de los juegos programados para el día actual.
+    Con todas las dependencias instaladas y la clave de API configurada, puedes ejecutar la aplicación en un emulador o en un dispositivo físico. Asegúrate de que tu emulador esté en funcionamiento o que tu dispositivo esté conectado y reconocido por Flutter. Luego, ejecuta el siguiente comando:
 
-4.  **Notificaciones Push:**
+    ```bash
+    flutter run
+    ```
 
-    *   Asegúrese de haber habilitado las notificaciones para la aplicación EpicSports en la configuración de su dispositivo Android.
-    *   Recibirá notificaciones push para eventos importantes de los juegos, tales como el inicio de un juego, cambios en el marcador, y el final de un juego.
+    Flutter compilará y ejecutará la aplicación en el dispositivo o emulador seleccionado.
 
-5.  **Ejemplo de Uso:**
+### Solución de Problemas Comunes
 
-    Imagine que desea seguir un juego específico entre los Dodgers y los Yankees.  
-    *   Abra la aplicación EpicSports.
-    *   En la pantalla principal, busque el juego Dodgers vs. Yankees en la lista de juegos.
-    *   Verá el marcador actual del juego, que se actualiza automáticamente a medida que avanza el juego.
-    *   Si habilitó las notificaciones, recibirá una notificación push si un equipo anota o si hay algún otro evento importante en el juego.
+*   **Problemas con las Dependencias:** Si encuentras problemas durante la instalación de las dependencias, asegúrate de tener la última versión de Flutter y de que tu configuración de Android SDK sea correcta. Intenta ejecutar `flutter doctor` para identificar posibles problemas.
+*   **Problemas con la API Key:** Verifica que la API Key sea correcta y que tenga permisos para acceder a los datos de MLB. También verifica que el formato de la API Key sea el correcto.
+*   **Problemas de Compilación:** Si la aplicación no se compila, revisa los mensajes de error en la terminal. Asegúrate de que no haya errores de sintaxis en tu código y de que todas las dependencias estén instaladas correctamente.
 
-**Consideraciones Adicionales:**
+## Uso
 
-*   **Conexión a Internet:** La aplicación requiere una conexión a Internet activa para recibir los marcadores actualizados y las notificaciones push de la API de Sport Radar.
-*   **Configuración de Notificaciones:** Verifique la configuración de notificaciones de la aplicación en su dispositivo Android para asegurarse de que las notificaciones estén habilitadas para EpicSports.
+## Uso
+
+Una vez que la aplicación EpicSports esté instalada en tu dispositivo Android, puedes comenzar a disfrutar de todas sus funcionalidades. Aquí te mostramos cómo:
+
+**1. Ejecutando la Aplicación:**
+
+*   Busca el icono de EpicSports en tu pantalla de inicio o cajón de aplicaciones y tócalo para iniciarla.
+
+**2. Navegación Principal:**
+
+*   **Partidos del Día:** Al abrir la aplicación, la pantalla principal mostrará una lista de los partidos de MLB programados para el día actual. Cada partido mostrará los equipos que se enfrentan.
+
+**3. Marcadores en Tiempo Real:**
+
+*   Para ver los marcadores en tiempo real de un partido específico, simplemente toca el partido de la lista. Se abrirá una pantalla con la información detallada del partido, incluyendo:
+    *   Anotaciones por entrada
+    *   Estadísticas clave del juego
+    *   Información sobre los jugadores
+
+**4. Notificaciones Push:**
+
+*   EpicSports te enviará notificaciones push para mantenerte al tanto de los momentos importantes de los partidos:
+    *   **Inicio del partido:** Recibirás una notificación cuando un partido que sigues esté a punto de comenzar.
+    *   **Actualizaciones de marcador:** Recibirás notificaciones cuando haya cambios significativos en el marcador, como carreras anotadas.
+    *   **Finalización del partido:** Recibirás una notificación cuando un partido haya terminado, con el resultado final.
+
+*Para asegurarte de recibir las notificaciones, verifica que las notificaciones estén habilitadas para la aplicación EpicSports en la configuración de tu dispositivo Android (Ajustes -> Notificaciones -> EpicSports).* 
+
+**Ejemplo de Interacción:**
+
+1.  Abres la aplicación EpicSports.
+2.  Ves una lista de partidos de MLB programados para hoy.
+3.  Seleccionas el partido entre Los Angeles Dodgers y San Francisco Giants.
+4.  Observas el marcador en tiempo real y las estadísticas del partido.
+5.  Recibes una notificación push cuando Mookie Betts conecta un jonrón en la parte baja de la quinta entrada.
+
+**Nota:** La aplicación utiliza la API de Sport Radar para obtener los datos de los partidos y los marcadores en tiempo real. Asegúrate de tener una conexión a Internet estable para recibir la información más actualizada.
+
+## Tecnologías
+
+EpicSports está construido utilizando las siguientes tecnologías clave:
+
+*   **Flutter:** El framework de desarrollo de UI de Google es el corazón de nuestra aplicación. Elegimos Flutter por su capacidad para crear aplicaciones de alto rendimiento, visualmente atractivas y con una base de código única para iOS y Android. Su sistema de widgets rico y personalizable nos permite ofrecer una experiencia de usuario consistente y fluida en ambas plataformas. Además, el desarrollo rápido y la recarga en caliente de Flutter aceleraron significativamente nuestro ciclo de desarrollo.
+
+*   **Dart:** El lenguaje de programación utilizado por Flutter. Dart proporciona un rendimiento excelente con una sintaxis limpia y fácil de aprender. Su soporte para programación asíncrona es crucial para manejar las actualizaciones de datos en tiempo real de la API de Sport Radar.
+
+*   **SportRadar API:** Esta API proporciona los datos en vivo de los partidos de la MLB. Su elección se basa en la necesidad de una fuente de datos confiable y completa para marcadores en tiempo real, estadísticas y otra información relevante para los partidos.
+
+*   **Firebase Cloud Messaging (FCM):** Utilizamos FCM para implementar las notificaciones push. Esto permite a los usuarios recibir alertas instantáneas sobre el inicio de los partidos, actualizaciones de puntaje y otros eventos importantes.
+
+La combinación de estas tecnologías nos permite ofrecer una aplicación deportiva robusta, escalable y fácil de usar para los fanáticos de la MLB.
 
 ## Notificaciones Push
 
-Las notificaciones push son una parte integral de la experiencia de usuario en EpicSports. Permiten a los usuarios mantenerse al tanto de los últimos acontecimientos en el mundo de la MLB, incluso cuando no están activamente usando la aplicación. A continuación, se detalla cómo funcionan las notificaciones push en EpicSports:
+### Notificaciones Push
 
-### Funcionalidad Principal
+Esta aplicación `EpicSports` utiliza notificaciones push para mantener a los usuarios informados sobre los momentos clave de los partidos de la MLB. Las notificaciones push se implementan utilizando Firebase Cloud Messaging (FCM) para la entrega confiable y eficiente de mensajes a dispositivos Android.
 
-*   **Alertas de Marcadores en Vivo:** Los usuarios reciben notificaciones instantáneas cuando un partido alcanza momentos clave, como el final de una entrada, un cambio de liderazgo o un resultado final. Estas notificaciones se envían en tiempo real, garantizando que los usuarios estén siempre informados.
-*   **Recordatorios de Juegos:** La aplicación permite a los usuarios configurar recordatorios para los juegos que les interesan. Recibirán una notificación push antes de que comience el juego, asegurándose de que no se pierdan el inicio de la acción.
-*   **Noticias y Actualizaciones:** Los usuarios también pueden optar por recibir notificaciones sobre noticias relevantes de la MLB, como traspasos de jugadores, lesiones importantes o anuncios importantes de la liga.
+**Funcionalidades Clave:**
 
-### Implementación Técnica
-
-Las notificaciones push en EpicSports se implementan utilizando Firebase Cloud Messaging (FCM). FCM proporciona una forma confiable y eficiente de enviar notificaciones push a dispositivos Android. Aquí hay una descripción general de los pasos involucrados:
-
-1.  **Registro del Dispositivo:** Cuando un usuario inicia la aplicación por primera vez, la aplicación registra el dispositivo con FCM y obtiene un token de registro único.
-2.  **Almacenamiento del Token:** Este token de registro se almacena en nuestra base de datos backend, asociado con la cuenta del usuario.
-3.  **Envío de Notificaciones:** Cuando se produce un evento que desencadena una notificación push (por ejemplo, un cambio de puntaje), nuestro backend envía un mensaje a FCM, especificando el token de registro del dispositivo de destino y el contenido de la notificación.
-4.  **Entrega de la Notificación:** FCM entrega la notificación al dispositivo del usuario, donde la aplicación la muestra al usuario.
-
-### Personalización
-
-Los usuarios tienen control total sobre las notificaciones que reciben. Pueden habilitar o deshabilitar diferentes tipos de notificaciones en la configuración de la aplicación. Esto garantiza que solo reciban las notificaciones que les interesan.
-
-### Manejo de Errores
-
-La aplicación incluye manejo de errores robusto para garantizar que las notificaciones push se entreguen de manera confiable. Si una notificación no se entrega (por ejemplo, si el dispositivo está fuera de línea), la aplicación intentará volver a enviarla más tarde. También monitoreamos las tasas de entrega de notificaciones para identificar y resolver cualquier problema.
-
-### Ejemplo de Código (Flutter)
-
-Aquí hay un fragmento de código Flutter que muestra cómo inicializar Firebase Messaging y solicitar permiso para enviar notificaciones push:
-
-```dart
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
-  // Solicitar permiso para enviar notificaciones push
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
-
-  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    print('User granted permission!');
-  } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-    print('User granted provisional permission');
-  } else {
-    print('User declined or has not accepted permission');
-  }
-
-  // Obtener el token de registro
-  String? token = await messaging.getToken();
-  print('Registration Token: $token');
-
-  runApp(MyApp());
-}
-```
-
-Este código solicita permiso al usuario para enviar notificaciones push y luego imprime el token de registro del dispositivo. Este token se puede utilizar para enviar notificaciones push dirigidas a dispositivos específicos.
-
-## Juegos del Día
-
-La funcionalidad 'Juegos del Día' en EpicSports es el núcleo de la experiencia para los fanáticos de la MLB que buscan información rápida y relevante sobre los partidos más importantes del día. Esta sección de la aplicación proporciona una vista concisa y actualizada de los juegos programados, incluyendo:
-
-*   **Listado Completo de Partidos:**  Muestra todos los juegos de MLB programados para el día actual.  Esto incluye información esencial como los equipos que se enfrentan (local vs. visitante), la hora de inicio del partido (convertida automáticamente a la zona horaria del usuario), y el estado actual del juego (programado, en curso, finalizado, pospuesto, etc.).
-
-*   **Información Detallada del Juego:**  Al seleccionar un juego específico de la lista, el usuario puede acceder a una vista más detallada que incluye información como:
-    *   **Marcador en Vivo:**  Actualizaciones en tiempo real del marcador, incluyendo carreras, hits y errores.
-    *   **Estadísticas Clave del Juego:**  Información estadística relevante, como el conteo de strikes y bolas, el número de outs, el corredor en base y las estadísticas de bateo y lanzamiento más recientes.
-    *   **Alineaciones de los Equipos:**  Las alineaciones iniciales de cada equipo, con información sobre los jugadores titulares y sus posiciones.
-    *   **Información del Lanzador:**  Detalles sobre los lanzadores abridores y relevistas, incluyendo sus estadísticas de temporada y su rendimiento en el juego actual.
-    *   **Notificaciones Personalizadas:**  Opción para activar notificaciones push específicas para un juego, permitiendo al usuario recibir alertas sobre momentos clave, como el inicio del juego, cambios de marcador importantes, o el final del juego.
-
-*   **Interfaz Intuitiva y Fácil de Usar:**  La presentación de la información está diseñada para ser clara y concisa, permitiendo a los usuarios encontrar rápidamente los juegos que les interesan y acceder a la información que necesitan sin complicaciones. La interfaz se adapta a diferentes tamaños de pantalla y orientaciones para una experiencia óptima en cualquier dispositivo Android.
-
-*   **Integración con Notificaciones Push:**  Los usuarios pueden configurar notificaciones push para recibir alertas sobre los juegos del día.  Esto incluye recordatorios antes del inicio del partido, actualizaciones de marcadores en tiempo real y notificaciones de final de partido.  Estas notificaciones son altamente personalizables, permitiendo a los usuarios elegir los juegos y los tipos de eventos sobre los que desean recibir alertas.
-
-Esta funcionalidad está construida con Flutter para garantizar un rendimiento óptimo y una experiencia de usuario fluida en dispositivos Android.
-
-## Marcadores Actualizados
-
-La funcionalidad de 'Marcadores Actualizados' en EpicSports proporciona a los usuarios información en tiempo real sobre los resultados de los partidos de la MLB. Esta característica es crucial para los fanáticos que desean seguir la acción a medida que se desarrolla, independientemente de su ubicación o la disponibilidad de transmisiones televisivas.
-
-**Características Clave:**
-
-*   **Actualizaciones en Tiempo Real:** Los marcadores se actualizan dinámicamente durante los juegos, reflejando cada carrera, hit y out a medida que suceden. Esto garantiza que los usuarios siempre tengan la información más precisa y actualizada.
-
-*   **Notificaciones Push:** Opcionalmente, los usuarios pueden habilitar las notificaciones push para recibir alertas instantáneas sobre cambios importantes en el juego, como el final de una entrada, carreras anotadas o cambios en el marcador. Esto permite a los fanáticos mantenerse informados sin tener que monitorear constantemente la aplicación.
-
-*   **Visualización Detallada del Juego:** Más allá de los marcadores básicos, la función ofrece información detallada del juego, como el conteo de bolas y strikes, quién está al bate, la situación de las bases y estadísticas relevantes del juego. Esto proporciona un contexto más profundo para el marcador y mejora la experiencia del usuario.
-
-*   **Personalización:** Los usuarios pueden personalizar su experiencia seleccionando sus equipos favoritos y priorizando los juegos que desean seguir más de cerca. Esto asegura que reciban las actualizaciones más relevantes para sus intereses.
-
-*   **Acceso a Resultados Anteriores:** Además de los marcadores en vivo, la función permite a los usuarios acceder a los resultados de juegos anteriores. Esto es útil para los fanáticos que se perdieron un juego o desean revisar el desempeño de su equipo en juegos recientes.
+*   **Alertas de Inicio de Partido:** Recibe una notificación cuando un partido de tu interés está a punto de comenzar. Esto asegura que no te pierdas el inicio de la acción.
+*   **Actualizaciones de Marcador en Tiempo Real:** Recibe notificaciones instantáneas cada vez que hay un cambio en el marcador. Esto incluye carreras, hits y errores importantes. Los usuarios pueden configurar qué tipo de eventos activan las notificaciones.
+*   **Alertas de Fin de Partido:** Se envía una notificación al finalizar el partido con el resultado final. Así, siempre estarás al tanto del desenlace de cada encuentro.
+*   **Notificaciones Personalizables:**  Los usuarios pueden personalizar los equipos de la MLB de los que desean recibir notificaciones, asegurando que solo reciban alertas relevantes para sus intereses.
+*   **Programación de Notificaciones:** La app permite programar notificaciones para partidos futuros.  El usuario puede establecer recordatorios para no perderse ningún encuentro.
 
 **Implementación Técnica:**
 
-La implementación de 'Marcadores Actualizados' se basa en la API de Sport Radar, que proporciona una fuente confiable y precisa de datos de la MLB. La aplicación Flutter consulta esta API de manera regular para obtener las últimas actualizaciones del juego y las muestra a los usuarios en un formato fácil de entender.
+1.  **Firebase Cloud Messaging (FCM):** Utilizamos FCM como nuestro proveedor de servicios de notificaciones push. Esto requiere la configuración de un proyecto de Firebase y la integración del SDK de Firebase en la aplicación Flutter.
 
-El uso de `StreamBuilder` en Flutter permite actualizar la información en la UI de forma reactiva cada vez que la API de Sport Radar provee nueva información. Esto permite evitar refrescos innecesarios en la UI y mejorar la experiencia de usuario.
+2.  **Tokens de Dispositivo:** Cada instancia de la aplicación registra un token de dispositivo único con FCM. Este token se utiliza para dirigir notificaciones específicamente a ese dispositivo.
 
-```dart
-StreamBuilder(
-  stream: sportRadarApi.getLiveScores(),
-  builder: (context, snapshot) {
-    if (snapshot.hasData) {
-      return LiveScoreWidget(scores: snapshot.data);
-    } else if (snapshot.hasError) {
-      return Text('Error: ${snapshot.error}');
-    } else {
-      return CircularProgressIndicator();
-    }
+3.  **Backend de Notificaciones:** Un backend (no incluido en este repositorio, pero podría ser implementado con Node.js o Python) gestiona el envío de notificaciones a través de la API de FCM. Este backend recibe eventos de la API de Sport Radar y los traduce en notificaciones push.
+
+4.  **Manejo de Notificaciones en Flutter:** La aplicación Flutter maneja las notificaciones recibidas en segundo plano y en primer plano. Cuando se recibe una notificación, se muestra una alerta en el dispositivo del usuario.
+
+**Configuración (Requiere Backend):**
+
+Para habilitar completamente las notificaciones push, necesitarás un backend configurado para enviar mensajes a FCM.  Aquí están los pasos generales:
+
+   1.  **Crear un Proyecto de Firebase:** Ve a la consola de Firebase y crea un nuevo proyecto.
+
+   2.  **Configurar FCM:** Habilita FCM para tu proyecto de Firebase.
+
+   3.  **Obtener las Credenciales:** Obtén las credenciales de tu proyecto de Firebase (clave de servidor) que se utilizarán en tu backend.
+
+   4.  **Implementar el Backend:**  Crea un backend que escuche los eventos de Sport Radar y envíe notificaciones a FCM usando las credenciales obtenidas. Un ejemplo de código para enviar una notificación básica en Node.js (usando el paquete `firebase-admin`) sería:
+
+```javascript
+const admin = require('firebase-admin');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccountKey),
+});
+
+const message = {
+  notification: {
+    title: '¡Gol!',
+    body: 'El equipo local acaba de anotar.',
   },
-)
+  token: deviceToken,
+};
+
+admin.messaging().send(message)
+  .then((response) => {
+    console.log('Successfully sent message:', response);
+  })
+  .catch((error) => {
+    console.log('Error sending message:', error);
+  });
 ```
 
-El manejo de errores y la gestión del estado se implementan cuidadosamente para garantizar que la aplicación sea robusta y confiable, incluso en condiciones de red desfavorables.
+   5.  **Configurar la Aplicación Flutter:**  Asegúrate de que la aplicación Flutter esté correctamente configurada para recibir notificaciones de FCM. Esto implica agregar el SDK de Firebase a tu proyecto Flutter y configurar el `FirebaseMessaging`.
 
+**Nota:** Esta sección asume que ya tienes un conocimiento básico de Firebase Cloud Messaging y su integración con aplicaciones Flutter. Consulta la documentación oficial de Firebase para obtener información más detallada.
+
+## Marcadores en tiempo real
+
+La funcionalidad de marcadores en tiempo real es el núcleo de EpicSports. Permite a los usuarios seguir la acción de los partidos de la MLB en vivo, sin demoras significativas. Esta sección describe cómo se implementa esta característica y los detalles técnicos relevantes.
+
+**Fuente de Datos:**
+
+Los marcadores en tiempo real se obtienen a través de la API de SportRadar.  Se ha implementado una conexión persistente con la API para garantizar que los datos se actualicen de manera continua. Se utilizan suscripciones a eventos específicos para recibir notificaciones push cada vez que ocurre un evento significativo en un partido (ej., un hit, una carrera, un cambio de entrada).
+
+**Implementación en Flutter:**
+
+*   **Streams y Sockets:** La comunicación con la API de SportRadar se maneja mediante `Streams` de Dart. Se utiliza la biblioteca `WebSocket` para establecer una conexión bidireccional en tiempo real.
+
+    ```dart
+    import 'package:web_socket_channel/web_socket_channel.dart';
+
+    final channel = WebSocketChannel.connect(
+      Uri.parse('wss://api.sportradar.com/...'), // URL de SportRadar
+    );
+
+    channel.stream.listen((message) {
+      // Procesar el mensaje recibido de SportRadar
+      updateScore(message);
+    });
+    ```
+
+*   **Gestión del Estado (State Management):**  Para asegurar que la interfaz de usuario refleje los datos más recientes, se utiliza un sistema de gestión de estado reactivo (como `Provider` o `Bloc`).  Cuando se recibe una actualización de la API, se actualiza el estado de la aplicación, lo que provoca una reconstrucción de los widgets relevantes.
+
+*   **Manejo de Errores:** Se han implementado mecanismos robustos de manejo de errores para garantizar que la aplicación pueda recuperarse de errores de conexión o datos inesperados. Esto incluye la re-conexión automática a la API y la visualización de mensajes de error informativos al usuario.
+
+*   **Optimización del Rendimiento:**  Para evitar un consumo excesivo de recursos, se han implementado técnicas de optimización del rendimiento, como la limitación de la frecuencia de las actualizaciones de la interfaz de usuario y la utilización de `ListView.builder` para renderizar las listas de eventos de forma eficiente.
+
+**Consideraciones de la API de SportRadar:**
+
+*   Es esencial tener una clave de API válida de SportRadar para acceder a los datos en tiempo real. Esta clave debe configurarse correctamente en la aplicación.
+*   La API de SportRadar tiene límites de frecuencia.  La aplicación debe estar diseñada para manejar estos límites y evitar excederlos.
+
+**Visualización de Datos:**
+
+Los datos de los marcadores se presentan de forma clara y concisa en la interfaz de usuario. Esto incluye el marcador actual, el estado del partido (ej., entrada actual, número de outs), y otra información relevante.  Se utilizan widgets personalizados para mostrar los datos de forma visualmente atractiva.
+
+**Ejemplo de Datos Recibidos:**
+
+Aunque el formato exacto depende de SportRadar, un ejemplo simplificado podría ser:
+
+```json
+{
+  "game_id": "12345",
+  "inning": 7,
+  "inning_half": "bottom",
+  "home_score": 3,
+  "away_score": 2,
+  "outs": 2,
+  "strikes": 1,
+  "balls": 3
+}
+```
+
+Este JSON se deserializa y se usa para actualizar los widgets correspondientes en la aplicación.
+
+## Partidos del día
+
+La funcionalidad de 'Partidos del día' es el núcleo de EpicSports, proporcionando a los usuarios una vista completa de los juegos de la MLB programados para el día en curso. Esta sección detalla cómo se implementa esta funcionalidad y cómo los usuarios pueden interactuar con ella.
+
+**Características Clave:**
+
+*   **Visualización Integral:** Muestra todos los partidos programados para el día actual, organizados cronológicamente para una fácil navegación.
+*   **Información Detallada:** Cada partido muestra información esencial, incluyendo los equipos participantes (local y visitante), la hora de inicio programada (convertida a la zona horaria del usuario), y el estado del partido (por ejemplo, 'Por comenzar', 'En Juego', 'Finalizado').
+*   **Integración con Marcadores en Tiempo Real:** Al seleccionar un partido de la lista, los usuarios son redirigidos a la vista de 'Marcadores en Tiempo Real', donde pueden seguir el desarrollo del juego con actualizaciones minuto a minuto (ver la sección 'Marcadores en Tiempo Real' para más detalles).
+*   **Notificaciones Push (Integración Futura):** Aunque no está implementado actualmente, planeamos integrar notificaciones push para recordar a los usuarios sobre los partidos próximos y proporcionar actualizaciones importantes durante los juegos (por ejemplo, cambios de puntaje, finales de entrada).
+
+**Implementación Técnica:**
+
+*   **Fuente de Datos:** Los datos de los partidos se obtienen a través de la API de Sport Radar, específicamente utilizando los endpoints diseñados para obtener la programación diaria de la MLB.
+*   **Manejo de Fechas:** Se utiliza la librería `intl` de Flutter para formatear y convertir las fechas y horas de los partidos a la zona horaria local del usuario. Esto asegura una experiencia consistente y relevante, independientemente de la ubicación del usuario.
+*   **Estado de los Partidos:** La lógica de la aplicación evalúa el estado actual de cada partido basándose en los datos proporcionados por la API. Esto permite mostrar etiquetas precisas como 'Por Comenzar', 'En Juego' o 'Finalizado'.
+*   **Actualización de Datos:** La vista 'Partidos del Día' se actualiza automáticamente a intervalos regulares (ej., cada 5 minutos) para reflejar cualquier cambio en la programación (ej., retrasos debido al clima).
+
+**Ejemplo de Uso:**
+
+Al abrir la aplicación EpicSports, la vista predeterminada es 'Partidos del Día', proporcionando acceso inmediato a la programación del día. Los usuarios pueden desplazarse verticalmente para explorar todos los partidos. Al tocar un partido específico, la aplicación navega automáticamente a la vista de 'Marcadores en Tiempo Real' para ese juego.
+
+**Código de Ejemplo (Obtención de Partidos - Pseudocódigo):**
+
+```dart
+Future<List<Match>> getTodaysMatches() async {
+  // Llamar a la API de Sport Radar para obtener los partidos del día.
+  final response = await http.get(Uri.parse('https://api.sportradar.com/mlb/official/trial/v7/en/schedules/{YYYY-MM-DD}/schedule.json?api_key={YOUR_API_KEY}'));
+
+  if (response.statusCode == 200) {
+    // Parsear la respuesta JSON y mapearla a una lista de objetos `Match`.
+    final jsonData = jsonDecode(response.body);
+    List<Match> matches = jsonData['games'].map((game) => Match.fromJson(game)).toList();
+    return matches;
+  } else {
+    // Manejar errores (ej., mostrar un mensaje de error al usuario).
+    throw Exception('Failed to load matches');
+  }
+}
+```
+
+Este pseudocódigo ilustra el proceso básico de obtención de datos de partidos desde la API de Sport Radar. En la implementación real, se utilizan técnicas de manejo de errores más robustas y se considera la paginación de la API para manejar grandes volúmenes de datos.
 
 ## Contribuciones
 
 ## Contribuciones
 
-¡Nos encanta que quieras contribuir a EpicSports! Aquí te explicamos cómo puedes hacerlo.
+¡Nos encanta recibir contribuciones a EpicSports! Si deseas contribuir, sigue estas pautas:
 
-### Cómo contribuir
+### Cómo Contribuir
 
-1.  **Haz un fork del repositorio:**
+1.  **Fork del Repositorio:**
+    *   Haz un fork del repositorio EpicSports en tu propia cuenta de GitHub.
 
-    En la página del repositorio de EpicSports en GitHub, haz clic en el botón "Fork" en la esquina superior derecha. Esto creará una copia del repositorio en tu propia cuenta de GitHub.
-
-2.  **Clona tu fork localmente:**
-
-    Usa `git` para clonar el repositorio a tu máquina local.
-
+2.  **Clon del Repositorio Forkeado:**
     ```bash
     git clone https://github.com/tu-usuario/EpicSports.git
     cd EpicSports
     ```
 
-3.  **Crea una rama para tus cambios:**
-
-    Es importante crear una rama separada para cada contribución. Esto mantiene el `main` branch limpio y facilita la revisión de tus cambios.
-
+3.  **Creación de una Rama:**
+    *   Crea una nueva rama para tu contribución. Usa un nombre descriptivo:
     ```bash
-    git checkout -b feature/tu-nueva-caracteristica
+    git checkout -b feature/tu-caracteristica
+    ```
+    o
+    ```bash
+    git checkout -b fix/tu-arreglo
     ```
 
-    O, si estás arreglando un bug:
+4.  **Realización de Cambios:**
+    *   Realiza los cambios necesarios en el código. Asegúrate de que tu código siga las convenciones de estilo del proyecto (Flutter).
+    *   Escribe pruebas unitarias para tu código, si es aplicable.
 
-    ```bash
-    git checkout -b fix/descripcion-del-bug
-    ```
-
-4.  **Realiza tus cambios:**
-
-    Implementa los cambios que deseas aportar. Asegúrate de que tu código siga las convenciones del proyecto y esté bien comentado.
-
-5.  **Realiza commits con mensajes descriptivos:**
-
-    Escribe mensajes de commit claros y concisos que expliquen lo que has cambiado. Un buen mensaje de commit sigue estas pautas:
-
-    *   Comienza con un verbo en imperativo (ej., "Añade", "Corrige", "Actualiza").
-    *   Describe brevemente el cambio (máximo 50 caracteres).
-    *   Opcionalmente, añade una explicación más detallada en el cuerpo del mensaje.
-
+5.  **Commit de los Cambios:**
+    *   Haz commit de tus cambios con mensajes descriptivos. Sigue estas pautas:
+        *   Usa un título conciso (máximo 50 caracteres).
+        *   Proporciona una descripción más detallada en el cuerpo del mensaje.
     ```bash
     git add .
-    git commit -m "Añade: Implementa la función de notificaciones push"
+    git commit -m "feat: Agrega la funcionalidad X"
     ```
 
-6.  **Sube tus cambios a tu fork en GitHub:**
-
+6.  **Rebase con la Rama Principal (opcional pero recomendado):**
+    *   Antes de enviar tu Pull Request, considera hacer rebase con la rama `main` para evitar conflictos:
     ```bash
-    git push origin feature/tu-nueva-caracteristica
+    git fetch origin
+    git rebase origin/main
     ```
 
-7.  **Crea un Pull Request:**
+7.  **Push a tu Repositorio:**
+    *   Sube tu rama a tu repositorio fork en GitHub:
+    ```bash
+    git push origin feature/tu-caracteristica
+    ```
 
-    En tu fork del repositorio en GitHub, haz clic en el botón "Compare & pull request". Asegúrate de describir claramente tus cambios y el problema que resuelven. También puedes mencionar a colaboradores específicos para que revisen tu Pull Request.
+8.  **Apertura de un Pull Request:**
+    *   Abre un Pull Request desde tu rama en tu repositorio fork a la rama `main` del repositorio original de EpicSports.
+    *   Proporciona una descripción clara de tus cambios y su propósito en el Pull Request.
 
-### Directrices de contribución
+### Pautas de Contribución
 
-*   **Estilo de código:** Por favor, sigue el estilo de código existente en el proyecto.  Considera usar las herramientas de formateo de código disponibles para Flutter para mantener la consistencia.
-*   **Pruebas:** Si añades nuevas funcionalidades, considera añadir pruebas unitarias o de integración para asegurar la calidad del código.
-*   **Documentación:** Si cambias APIs o añades nuevas funcionalidades, por favor, actualiza la documentación correspondiente.
-*   **Comunicación:** Si tienes alguna pregunta o duda, no dudes en abrir un issue en GitHub.
+*   **Estilo de Código:** Sigue las convenciones de estilo de Flutter.
+*   **Pruebas:** Escribe pruebas unitarias para tu código.
+*   **Documentación:** Documenta tu código claramente.
+*   **Mensajes de Commit:** Usa mensajes de commit descriptivos.
+*   **Comunicación:** Sé respetuoso y comunicativo en las discusiones.
 
-### Proceso de revisión
+### Proceso de Revisión
 
-Una vez que hayas creado un Pull Request, los mantenedores del proyecto lo revisarán. Pueden solicitar cambios o hacer preguntas sobre tu contribución. Una vez que se hayan resuelto todos los problemas y se haya aprobado el Pull Request, se fusionará en el `main` branch.
+*   Los mantenedores del proyecto revisarán tu Pull Request.
+*   Se te puede pedir que realices cambios adicionales.
+*   Una vez aprobado, tu Pull Request será mergeado.
 
 ¡Gracias por tu contribución a EpicSports!
 
 ## Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT - vea el archivo [LICENSE](LICENSE) para más detalles.
+EpicSports está licenciado bajo la Licencia MIT.
 
-```
-Copyright (c) 2025 [San Benito]
-```
+Copyright (c) 2025 [SanBenito12]
 
-Se concede, de forma gratuita, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), el derecho a utilizar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacerlo, sujeto a las siguientes condiciones:
+Por la presente se otorga permiso, libre de cargo, a cualquier persona que obtenga una copia
+de este software y los archivos de documentación asociados (el "Software"), para tratar
+el Software sin restricción, incluyendo sin limitación los derechos
+de usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender
+copias del Software, y para permitir a las personas a quienes se les proporcione
+el Software a hacer lo mismo, sujeto a las siguientes condiciones:
 
-El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
+El aviso de copyright anterior y este aviso de permiso se incluirán en
+todas las copias o partes sustanciales del Software.
 
-EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUIDAS, ENTRE OTRAS, LAS GARANTÍAS DE COMERCIABILIDAD, ADECUACIÓN PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO LOS AUTORES O TITULARES DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O DE OTRO TIPO, QUE SURJAN DE, ESTÉN FUERA DE O EN CONEXIÓN CON EL SOFTWARE O EL USO U OTROS TRATOS EN EL SOFTWARE.
+EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O
+IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A LAS GARANTÍAS DE COMERCIABILIDAD,
+IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO EL
+AUTORES O TITULARES DEL COPYRIGHT SERÁN RESPONSABLES POR CUALQUIER RECLAMACIÓN, DAÑOS U OTRA
+RESPONSABILIDAD, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O DE OTRO MODO, QUE SURJA DE,
+FUERA DE O EN CONEXIÓN CON EL SOFTWARE O EL USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
 
 
