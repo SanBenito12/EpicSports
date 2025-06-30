@@ -1,8 +1,8 @@
 // lib/services/game_monitor_service.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/mlb_game.dart';
-import 'sportradar_service.dart';
+import '../models/simple_mlb_models.dart'; // ✅ IMPORT CORREGIDO
+import 'simple_mlb_service.dart'; // ✅ USAR SERVICIO SIMPLIFICADO
 import 'push_notification_service.dart';
 import 'game_notification_service.dart';
 
@@ -12,14 +12,13 @@ class GameMonitorService {
   GameMonitorService._();
 
   // Services
-  final SportradarService _sportradarService = SportradarService();
   final GameNotificationService _notificationService = GameNotificationService();
 
   // State
   Timer? _monitorTimer;
   List<MLBGame> _lastKnownGames = [];
-  Set<String> _gamesAlreadyNotified = <String>{};
-  Set<String> _remindersSent = <String>{};
+  final Set<String> _gamesAlreadyNotified = <String>{};
+  final Set<String> _remindersSent = <String>{};
 
   bool _isMonitoring = false;
 
@@ -55,8 +54,8 @@ class GameMonitorService {
     try {
       debugPrint('🔍 Verificando estado de partidos...');
       
-      // Obtener partidos actuales
-      final currentGames = await _sportradarService.getTodaysGames();
+      // Obtener partidos actuales usando el servicio simplificado
+      final currentGames = await SimpleMLBService.getTodaysGames();
       
       // Comparar con partidos anteriores
       await _detectGameChanges(currentGames);

@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
-import 'optimized_dashboard_screen.dart';
+import 'simple_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -558,7 +558,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const OptimizedDashboardScreen()),
+          MaterialPageRoute(builder: (context) => const SimpleDashboardScreen()),
         );
       }
     } catch (e) {

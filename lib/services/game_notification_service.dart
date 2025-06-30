@@ -1,7 +1,7 @@
 // lib/services/game_notification_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/mlb_game.dart';
+import '../models/simple_mlb_models.dart'; // ✅ IMPORT CORREGIDO
 import 'package:flutter/foundation.dart';
 
 class GameNotificationService {
@@ -14,12 +14,26 @@ class GameNotificationService {
       final user = _auth.currentUser;
       if (user == null) return false;
 
+      // Crear data para Firestore usando el método toFirestore del modelo
+      final gameData = {
+        'gameId': game.id,
+        'homeTeam': game.homeTeam.name,
+        'awayTeam': game.awayTeam.name,
+        'scheduled': game.scheduled,
+        'status': game.status,
+        'homeTeamAbbr': game.homeTeam.abbreviation,
+        'awayTeamAbbr': game.awayTeam.abbreviation,
+        'venue': game.venue.name,
+        'isNotified': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
       await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('gameNotifications')
           .doc(game.id)
-          .set(game.toFirestore());
+          .set(gameData);
 
       debugPrint('✅ Notificación agregada para el juego: ${game.id}');
       return true;
@@ -56,13 +70,12 @@ class GameNotificationService {
       final user = _auth.currentUser;
       if (user == null) return false;
 
-      final doc =
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .collection('gameNotifications')
-              .doc(gameId)
-              .get();
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .doc(gameId)
+          .get();
 
       return doc.exists;
     } catch (e) {
@@ -77,12 +90,11 @@ class GameNotificationService {
       final user = _auth.currentUser;
       if (user == null) return [];
 
-      final querySnapshot =
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .collection('gameNotifications')
-              .get();
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .get();
 
       return querySnapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
@@ -111,13 +123,14 @@ class GameNotificationService {
       if (user == null) return;
 
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final querySnapshot =
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .collection('gameNotifications')
-              .where('scheduled', isLessThan: yesterday.toIso8601String())
-              .get();
+      final yesterdayString = yesterday.toIso8601String();
+      
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .where('scheduled', isLessThan: yesterdayString)
+          .get();
 
       for (var doc in querySnapshot.docs) {
         await doc.reference.delete();
@@ -131,41 +144,154 @@ class GameNotificationService {
     }
   }
 
-  // Simular envío de notificación cuando un juego empieza
-  Future<void> checkAndSendGameStartNotifications(List<MLBGame> games) async {
+  // Obtener información detallada de las notificaciones del usuario
+  Future<List<Map<String, dynamic>>> getUserNotificationDetails() async {
     try {
-      final userNotifications = await getUserNotificationGames();
+      final user = _auth.currentUser;
+      if (user == null) return [];
 
-      for (var game in games) {
-        if (userNotifications.contains(game.id) && game.isLive) {
-          await _sendNotification(game);
-        }
-      }
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .orderBy('scheduled', descending: false)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'gameId': doc.id,
+          'homeTeam': data['homeTeam'] ?? 'Unknown',
+          'awayTeam': data['awayTeam'] ?? 'Unknown',
+          'scheduled': data['scheduled'],
+          'status': data['status'] ?? 'unknown',
+          'venue': data['venue'] ?? 'Unknown',
+          'createdAt': data['createdAt'],
+        };
+      }).toList();
     } catch (e) {
-      debugPrint('❌ Error verificando notificaciones de juegos: $e');
+      debugPrint('❌ Error obteniendo detalles de notificaciones: $e');
+      return [];
     }
   }
 
-  Future<void> _sendNotification(MLBGame game) async {
-    // Aquí implementarías la lógica real de notificaciones push
-    // Por ahora solo guardamos un log en Firestore
+  // Estadísticas de notificaciones del usuario
+  Future<Map<String, int>> getNotificationStats() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        return {
+          'total': 0,
+          'active': 0,
+          'scheduled': 0,
+          'live': 0,
+          'finished': 0,
+        };
+      }
 
-      await _firestore.collection('notifications').add({
-        'userId': user.uid,
-        'gameId': game.id,
-        'title': '¡Juego en vivo!',
-        'message':
-            '${game.awayTeam.fullName} vs ${game.homeTeam.fullName} ha comenzado',
-        'timestamp': FieldValue.serverTimestamp(),
-        'type': 'game_start',
-      });
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .get();
 
-      debugPrint('📱 Notificación enviada para el juego: ${game.id}');
+      int total = querySnapshot.docs.length;
+      int scheduled = 0;
+      int live = 0;
+      int finished = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final status = data['status'] ?? 'unknown';
+        
+        switch (status) {
+          case 'scheduled':
+            scheduled++;
+            break;
+          case 'inprogress':
+            live++;
+            break;
+          case 'closed':
+            finished++;
+            break;
+        }
+      }
+
+      return {
+        'total': total,
+        'active': total,
+        'scheduled': scheduled,
+        'live': live,
+        'finished': finished,
+      };
     } catch (e) {
-      debugPrint('❌ Error enviando notificación: $e');
+      debugPrint('❌ Error obteniendo estadísticas de notificaciones: $e');
+      return {
+        'total': 0,
+        'active': 0,
+        'scheduled': 0,
+        'live': 0,
+        'finished': 0,
+      };
+    }
+  }
+
+  // Método para testing - agregar notificación de prueba
+  Future<bool> addTestNotification() async {
+    try {
+      final testGame = MLBGame(
+        id: 'test_game_${DateTime.now().millisecondsSinceEpoch}',
+        status: 'scheduled',
+        scheduled: DateTime.now().add(const Duration(hours: 2)).toIso8601String(),
+        homeTeam: Team(
+          id: 'test_home',
+          name: 'Test Home Team',
+          market: 'Test City',
+          abbreviation: 'THT',
+        ),
+        awayTeam: Team(
+          id: 'test_away',
+          name: 'Test Away Team', 
+          market: 'Test Town',
+          abbreviation: 'TAT',
+        ),
+        venue: Venue(
+          id: 'test_venue',
+          name: 'Test Stadium',
+          city: 'Test City',
+          state: 'Test State',
+        ),
+        isLive: false,
+      );
+
+      return await addGameNotification(testGame);
+    } catch (e) {
+      debugPrint('❌ Error agregando notificación de prueba: $e');
+      return false;
+    }
+  }
+
+  // Limpiar todas las notificaciones del usuario
+  Future<bool> clearAllNotifications() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('gameNotifications')
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      debugPrint('✅ Todas las notificaciones han sido eliminadas');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error limpiando todas las notificaciones: $e');
+      return false;
     }
   }
 }
